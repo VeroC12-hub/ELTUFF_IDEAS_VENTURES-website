@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Truck, FlaskConical, BarChart3, Users, Package } from "lucide-react";
+import { ArrowRight, Shield, Truck, FlaskConical, BarChart3, Users, Package, Phone } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import logo from "@/assets/logo.png";
 
 const features = [
   { icon: FlaskConical, title: "Premium Formulations", desc: "Lab-tested cosmetic and chemical products with highest quality standards." },
@@ -28,10 +29,7 @@ const Index = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg gradient-accent flex items-center justify-center">
-              <span className="text-accent-foreground font-bold text-sm">CP</span>
-            </div>
-            <span className="font-display font-bold text-lg">ChemPro</span>
+            <img src={logo} alt="Ani's Pride by Antuff" className="h-10" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -64,13 +62,13 @@ const Index = () => {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="text-xs text-primary-foreground/80 font-medium">Trusted by 500+ businesses</span>
+              <span className="text-xs text-primary-foreground/80 font-medium">Eltuff Ideas Ventures</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold text-primary-foreground leading-tight mb-6">
-              Premium Cosmetics & Chemical Solutions
+              Premium Cosmetics & Household Chemical Solutions
             </h1>
             <p className="text-lg text-primary-foreground/70 mb-8 max-w-lg">
-              From formulation to delivery — we manufacture and supply high-quality cosmetic and household chemical products at scale.
+              From formulation to delivery — Ani's Pride by Antuff manufactures and supplies high-quality cosmetic and household chemical products at scale.
             </p>
             <div className="flex flex-wrap gap-4">
               <Button variant="accent" size="xl" asChild>
@@ -137,7 +135,7 @@ const Index = () => {
                 Ready to Scale Your Supply?
               </h2>
               <p className="text-primary-foreground/70 mb-8 max-w-md mx-auto">
-                Join hundreds of businesses already using ChemPro for their cosmetic and chemical supply needs.
+                Join businesses already using Ani's Pride by Antuff for their cosmetic and chemical supply needs.
               </p>
               <Button variant="accent" size="xl" asChild>
                 <Link to="/login">Get Started Today <ArrowRight className="ml-1" /></Link>
@@ -150,13 +148,15 @@ const Index = () => {
       {/* Footer */}
       <footer id="contact" className="border-t border-border py-10">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg gradient-accent flex items-center justify-center">
-              <span className="text-accent-foreground font-bold text-xs">CP</span>
-            </div>
-            <span className="font-display font-semibold">ChemPro</span>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Ani's Pride by Antuff" className="h-8" />
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 ChemPro Industries. All rights reserved.</p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <a href="tel:0555344377" className="flex items-center gap-1 hover:text-foreground transition-colors">
+              <Phone className="h-3.5 w-3.5" /> 0555344377
+            </a>
+          </div>
+          <p className="text-sm text-muted-foreground">© 2026 Eltuff Ideas Ventures. All rights reserved.</p>
         </div>
       </footer>
     </div>
