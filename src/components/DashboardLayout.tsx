@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { LucideIcon, Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 interface NavItem {
   title: string;
@@ -34,12 +35,9 @@ const DashboardLayout = ({ children, navGroups, portalName, userName, userRole }
     <>
       <div className="p-4 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg gradient-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-sm">CP</span>
-          </div>
+          <img src={logo} alt="Ani's Pride" className="h-8 brightness-0 invert" />
           {sidebarOpen && (
             <div>
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">ChemPro</h2>
               <p className="text-[10px] text-sidebar-foreground/60">{portalName}</p>
             </div>
           )}

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Mail, Lock, User, Building2 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const LoginPage = () => {
   const [loginType, setLoginType] = useState<"client" | "staff">("client");
@@ -15,12 +16,10 @@ const LoginPage = () => {
       <div className="hidden lg:flex lg:w-1/2 gradient-hero relative items-center justify-center p-12">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_30%,hsl(38,92%,50%),transparent_50%)]" />
         <div className="relative text-primary-foreground max-w-md">
-          <div className="h-12 w-12 rounded-xl gradient-accent flex items-center justify-center mb-8">
-            <span className="text-accent-foreground font-bold text-lg">CP</span>
-          </div>
+          <img src={logo} alt="Ani's Pride by Antuff" className="h-16 mb-8 brightness-0 invert" />
           <h1 className="text-4xl font-display font-bold mb-4">Welcome Back</h1>
           <p className="text-primary-foreground/70 text-lg">
-            Access your dashboard to manage orders, invoices, inventory, and more.
+            Access your Eltuff Ideas Ventures dashboard to manage orders, invoices, inventory, and more.
           </p>
         </div>
       </div>
