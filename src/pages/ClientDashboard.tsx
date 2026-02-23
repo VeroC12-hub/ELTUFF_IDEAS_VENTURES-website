@@ -1,7 +1,8 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
+import { useAuth } from "@/hooks/useAuth";
 import { ShoppingCart, FileText, DollarSign, Package, LayoutDashboard, ShoppingBag, Receipt, BarChart3, Settings } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
 
 const navGroups = [
   {
@@ -59,20 +60,17 @@ const statusColor: Record<string, string> = {
 };
 
 const ClientDashboard = () => {
+  const { profile } = useAuth();
+  const displayName = profile?.full_name || profile?.email || "User";
+
   return (
-    <DashboardLayout
-      navGroups={navGroups}
-      portalName="Client Portal"
-      userName="Acme Corp"
-      userRole="Premium Client"
-    >
+    <DashboardLayout navGroups={navGroups} portalName="Client Portal">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-display font-bold">Welcome back, Acme Corp</h1>
+          <h1 className="text-2xl font-display font-bold">Welcome back, {displayName}</h1>
           <p className="text-muted-foreground text-sm">Here's an overview of your account activity.</p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total Orders" value="142" change="+12% this month" changeType="positive" icon={ShoppingCart} />
           <StatCard title="Pending Invoices" value="5" change="3 due this week" changeType="negative" icon={FileText} />
@@ -80,9 +78,7 @@ const ClientDashboard = () => {
           <StatCard title="Products Ordered" value="23" change="4 categories" changeType="neutral" icon={Package} />
         </div>
 
-        {/* Charts Row */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Spending Trend */}
           <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
             <h3 className="font-display font-semibold mb-4">Spending Trend</h3>
             <ResponsiveContainer width="100%" height={260}>
@@ -102,7 +98,6 @@ const ClientDashboard = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Category Breakdown */}
           <div className="bg-card border border-border rounded-xl p-5">
             <h3 className="font-display font-semibold mb-4">By Category</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -129,7 +124,6 @@ const ClientDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Orders Table */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="p-5 border-b border-border">
             <h3 className="font-display font-semibold">Recent Orders</h3>

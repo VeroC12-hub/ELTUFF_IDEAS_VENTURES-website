@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, Users, Package, Receipt, FileText, BarChart3,
   Settings, DollarSign, TrendingUp, ShoppingCart, AlertTriangle,
@@ -7,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
+  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from "recharts";
 
 const navGroups = [
@@ -103,20 +104,20 @@ const stockStatusColor: Record<string, string> = {
 };
 
 const StaffDashboard = () => {
+  const { profile, role } = useAuth();
+  const displayName = profile?.full_name || "Staff";
+  const isAdmin = role === "admin";
+
   return (
-    <DashboardLayout
-      navGroups={navGroups}
-      portalName="Staff Portal"
-      userName="Sarah Johnson"
-      userRole="Sales Manager"
-    >
+    <DashboardLayout navGroups={navGroups} portalName={isAdmin ? "Admin Portal" : "Staff Portal"}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-display font-bold">Staff Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Overview of sales, inventory, and operations.</p>
+          <h1 className="text-2xl font-display font-bold">
+            {isAdmin ? "Admin" : "Staff"} Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm">Welcome back, {displayName}. Here's your operations overview.</p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Monthly Revenue" value="$48,200" change="+14.5% vs last month" changeType="positive" icon={DollarSign} />
           <StatCard title="Active Clients" value="87" change="+5 new this month" changeType="positive" icon={Users} />
@@ -124,7 +125,6 @@ const StaffDashboard = () => {
           <StatCard title="Low Stock Items" value="4" change="2 critical" changeType="negative" icon={AlertTriangle} />
         </div>
 
-        {/* Revenue Chart + Product Mix */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
             <h3 className="font-display font-semibold mb-4">Revenue vs Costs</h3>
@@ -166,9 +166,7 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        {/* Tables Row */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Top Clients */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="p-5 border-b border-border">
               <h3 className="font-display font-semibold">Top Clients</h3>
@@ -199,7 +197,6 @@ const StaffDashboard = () => {
             </div>
           </div>
 
-          {/* Recent Invoices */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="p-5 border-b border-border">
               <h3 className="font-display font-semibold">Recent Invoices</h3>
@@ -233,7 +230,6 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        {/* Low Stock Alert */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="p-5 border-b border-border flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-warning" />
