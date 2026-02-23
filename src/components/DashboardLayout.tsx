@@ -1,8 +1,9 @@
 import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { LucideIcon, Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
 interface NavItem {
@@ -20,16 +21,24 @@ interface DashboardLayoutProps {
   children: ReactNode;
   navGroups: NavGroup[];
   portalName: string;
-  userName: string;
-  userRole: string;
 }
 
-const DashboardLayout = ({ children, navGroups, portalName, userName, userRole }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, navGroups, portalName }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, role, signOut } = useAuth();
+
+  const userName = profile?.full_name || profile?.email || "User";
+  const userRole = role === "admin" ? "Administrator" : role === "staff" ? "Staff" : "Client";
 
   const isActive = (url: string) => location.pathname === url;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const SidebarContent = () => (
     <>
@@ -78,7 +87,7 @@ const DashboardLayout = ({ children, navGroups, portalName, userName, userRole }
         <div className={cn("flex items-center gap-3 px-3 py-2", !sidebarOpen && "justify-center")}>
           <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
             <span className="text-xs font-semibold text-sidebar-foreground">
-              {userName.split(" ").map(n => n[0]).join("")}
+              {userName.split(" ").map(n => n[0]).join("").slice(0, 2)}
             </span>
           </div>
           {sidebarOpen && (
@@ -88,13 +97,13 @@ const DashboardLayout = ({ children, navGroups, portalName, userName, userRole }
             </div>
           )}
         </div>
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2 mt-1 rounded-lg text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 mt-1 rounded-lg text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
         >
           <LogOut className="h-4 w-4" />
           {sidebarOpen && <span>Logout</span>}
-        </Link>
+        </button>
       </div>
     </>
   );
