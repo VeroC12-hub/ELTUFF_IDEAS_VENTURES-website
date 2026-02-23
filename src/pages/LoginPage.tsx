@@ -49,7 +49,7 @@ const LoginPage = () => {
       <div className="hidden lg:flex lg:w-1/2 gradient-hero relative items-center justify-center p-12">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_30%,hsl(38,92%,50%),transparent_50%)]" />
         <div className="relative text-primary-foreground max-w-md">
-          <img src={logo} alt="Ani's Pride by Antuff" className="h-20 mb-8" />
+          <img src={logo} alt="Ani's Pride by Antuff" className="h-24 mb-8 brightness-0 invert" />
           <h1 className="text-4xl font-display font-bold mb-4">Welcome to Eltuff Ideas Ventures</h1>
           <p className="text-primary-foreground/70 text-lg">
             Access your dashboard to manage orders, invoices, inventory, and more — all in one place.
