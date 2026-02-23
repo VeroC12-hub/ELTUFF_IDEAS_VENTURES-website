@@ -67,7 +67,7 @@ const productMix = [
   { name: "Industrial", value: 8 },
 ];
 
-const COLORS = ["hsl(220,60%,20%)", "hsl(38,92%,50%)", "hsl(152,60%,40%)", "hsl(210,80%,55%)", "hsl(340,65%,55%)"];
+const COLORS = ["hsl(145,45%,22%)", "hsl(42,85%,50%)", "hsl(152,60%,40%)", "hsl(210,80%,55%)", "hsl(340,65%,55%)"];
 
 const topClients = [
   { name: "Acme Corp", orders: 42, revenue: "$18,400", trend: "+12%" },
@@ -130,12 +130,12 @@ const StaffDashboard = () => {
             <h3 className="font-display font-semibold mb-4">Revenue vs Costs</h3>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={revenueData} barGap={2}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(140,10%,90%)" />
                 <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
                 <Tooltip />
-                <Bar dataKey="revenue" fill="hsl(220,60%,20%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="costs" fill="hsl(38,92%,50%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="hsl(145,45%,22%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="costs" fill="hsl(42,85%,50%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

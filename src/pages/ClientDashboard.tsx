@@ -43,7 +43,7 @@ const categoryData = [
   { name: "Personal Care", value: 10 },
 ];
 
-const COLORS = ["hsl(220,60%,20%)", "hsl(38,92%,50%)", "hsl(152,60%,40%)", "hsl(210,80%,55%)"];
+const COLORS = ["hsl(145,45%,22%)", "hsl(42,85%,50%)", "hsl(152,60%,40%)", "hsl(210,80%,55%)"];
 
 const recentOrders = [
   { id: "ORD-2024-0142", product: "Anti-Bacterial Soap Base", qty: "500 L", status: "Delivered", total: "$2,450" },
@@ -85,15 +85,15 @@ const ClientDashboard = () => {
               <AreaChart data={monthlyOrders}>
                 <defs>
                   <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(38,92%,50%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(38,92%,50%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(42,85%,50%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(42,85%,50%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215,20%,90%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(140,10%,90%)" />
                 <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
                 <Tooltip />
-                <Area type="monotone" dataKey="amount" stroke="hsl(38,92%,50%)" fill="url(#colorAmount)" strokeWidth={2} />
+                <Area type="monotone" dataKey="amount" stroke="hsl(42,85%,50%)" fill="url(#colorAmount)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
