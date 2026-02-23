@@ -3,42 +3,26 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Search, ShoppingCart, Phone, Mail, MapPin, ArrowRight, Star, Truck, Shield, Clock, ChevronRight } from "lucide-react";
+import { Search, ShoppingCart, Phone, Mail, MapPin, ArrowRight, Star, Truck, Shield, Clock, ChevronRight, ShoppingBag } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
+import { useStorefrontCategories, useStorefrontProducts, Product } from "@/hooks/useProducts";
+import CartSheet from "@/components/CartSheet";
 import logo from "@/assets/logo.png";
 import heroBanner from "@/assets/hero-banner.jpg";
 import soapCollection from "@/assets/products/soap-collection.jpg";
 import moisturizer from "@/assets/products/moisturizer.jpg";
 import cleaner from "@/assets/products/cleaner.jpg";
-import haircare from "@/assets/products/haircare.jpg";
-import lotion from "@/assets/products/lotion.jpg";
-import barSoap from "@/assets/products/bar-soap.jpg";
 import detergent from "@/assets/products/detergent.jpg";
 import sanitizer from "@/assets/products/sanitizer.jpg";
 
-const categories = [
-  { name: "Skin Care", count: 24, image: moisturizer },
-  { name: "Hair Care", count: 18, image: haircare },
-  { name: "Household Cleaners", count: 15, image: cleaner },
-  { name: "Personal Hygiene", count: 12, image: sanitizer },
-];
-
-const newArrivals = [
-  { name: "Premium Liquid Soap Collection", price: "₵ 85.00", image: soapCollection, tag: "New" },
-  { name: "Ultra Moisturizing Face Cream", price: "₵ 120.00", image: moisturizer, tag: "New" },
-  { name: "Multi-Surface Cleaner Spray", price: "₵ 45.00", image: cleaner, tag: "New" },
-  { name: "Herbal Shampoo & Conditioner Set", price: "₵ 95.00", image: haircare, tag: "New" },
-];
-
-const bestSellers = [
-  { name: "Nourishing Body Lotion", price: "₵ 65.00", oldPrice: "₵ 80.00", image: lotion, tag: "-19%" },
-  { name: "Natural Bar Soap Gift Set", price: "₵ 55.00", image: barSoap, tag: "Best Seller" },
-  { name: "Floor & Surface Detergent", price: "₵ 38.00", image: detergent, tag: "Popular" },
-  { name: "Antibacterial Hand Sanitizer", price: "₵ 25.00", image: sanitizer, tag: "Best Seller" },
-  { name: "Deep Cleansing Shampoo", price: "₵ 70.00", oldPrice: "₵ 85.00", image: haircare, tag: "-18%" },
-  { name: "Premium Moisturizer Jar", price: "₵ 150.00", image: moisturizer, tag: "Popular" },
-  { name: "Eco Surface Cleaner Pack", price: "₵ 55.00", image: cleaner, tag: "Best Seller" },
-  { name: "Luxury Liquid Hand Soap", price: "₵ 42.00", image: soapCollection, tag: "Popular" },
-];
+// Fallback images per category name (used when DB has no image_url set yet)
+const categoryFallbacks: Record<string, string> = {
+  "Cosmetics": moisturizer,
+  "Household Chemicals": cleaner,
+  "Industrial": detergent,
+  "Personal Care": sanitizer,
+  "Hair Care": soapCollection,
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -48,40 +32,72 @@ const fadeUp = {
   }),
 };
 
-const ProductCard = ({ product, index }: { product: typeof bestSellers[0]; index: number }) => (
-  <motion.div variants={fadeUp} custom={index} className="group">
-    <div className="relative bg-secondary/30 rounded-xl overflow-hidden aspect-square mb-3">
-      <img
-        src={product.image}
-        alt={product.name}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        loading="lazy"
-      />
-      {product.tag && (
-        <span className={`absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-          product.tag.startsWith("-")
-            ? "bg-destructive text-destructive-foreground"
-            : "bg-primary text-primary-foreground"
-        }`}>
-          {product.tag}
-        </span>
-      )}
-      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors" />
-    </div>
-    <h3 className="font-sans text-sm font-medium leading-snug mb-1 group-hover:text-primary transition-colors line-clamp-2">
-      {product.name}
-    </h3>
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-bold text-primary">{product.price}</span>
-      {product.oldPrice && (
-        <span className="text-xs text-muted-foreground line-through">{product.oldPrice}</span>
-      )}
-    </div>
+const ProductCardSkeleton = () => (
+  <div className="group animate-pulse">
+    <div className="bg-secondary/50 rounded-xl aspect-square mb-3" />
+    <div className="h-4 bg-secondary/50 rounded w-3/4 mb-2" />
+    <div className="h-4 bg-secondary/50 rounded w-1/3" />
+  </div>
+);
+
+const ProductCard = ({ product, index, onAddToCart }: {
+  product: Product;
+  index: number;
+  onAddToCart: (p: Product) => void;
+}) => (
+  <motion.div variants={fadeUp} custom={index} className="group flex flex-col">
+    <Link to={`/products/${product.id}`} className="flex-1">
+      <div className="relative bg-secondary/30 rounded-xl overflow-hidden aspect-square mb-3">
+        <img
+          src={product.image_url || soapCollection}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+        {product.tag && (
+          <span className={`absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+            product.tag.startsWith("-")
+              ? "bg-destructive text-destructive-foreground"
+              : "bg-primary text-primary-foreground"
+          }`}>
+            {product.tag}
+          </span>
+        )}
+        {/* Quick-add button on hover */}
+        <button
+          onClick={(e) => { e.preventDefault(); onAddToCart(product); }}
+          className="absolute bottom-3 right-3 h-8 w-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:scale-110 active:scale-95"
+          aria-label="Add to cart"
+        >
+          <ShoppingBag className="h-4 w-4" />
+        </button>
+        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors" />
+      </div>
+      <h3 className="font-sans text-sm font-medium leading-snug mb-1 group-hover:text-primary transition-colors line-clamp-2">
+        {product.name}
+      </h3>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-bold text-primary">₵ {product.price.toFixed(2)}</span>
+        {product.old_price && (
+          <span className="text-xs text-muted-foreground line-through">₵ {product.old_price.toFixed(2)}</span>
+        )}
+      </div>
+    </Link>
+    <button
+      onClick={() => onAddToCart(product)}
+      className="w-full text-xs font-semibold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+    >
+      Add to Cart
+    </button>
   </motion.div>
 );
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { count, setIsOpen, addToCart } = useCart();
+  const { data: dbCategories = [], isLoading: catsLoading } = useStorefrontCategories();
+  const { data: newArrivals = [], isLoading: newLoading } = useStorefrontProducts("new_arrivals");
+  const { data: bestSellers = [], isLoading: bestLoading } = useStorefrontProducts("best_sellers");
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,10 +142,21 @@ const Index = () => {
               <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
                 <Link to="/login">Login / Register</Link>
               </Button>
+              {/* Cart icon with badge */}
+              <button
+                onClick={() => setIsOpen(true)}
+                className="relative p-2 rounded-lg hover:bg-secondary transition-colors"
+                aria-label="Open cart"
+              >
+                <ShoppingCart className="h-5 w-5 text-foreground" />
+                {count > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center">
+                    {count > 9 ? "9+" : count}
+                  </span>
+                )}
+              </button>
               <Button variant="accent" size="sm" asChild>
-                <Link to="/login">
-                  <ShoppingCart className="h-4 w-4 mr-1" /> Sign In
-                </Link>
+                <Link to="/login">Sign In</Link>
               </Button>
             </div>
           </div>
@@ -143,8 +170,7 @@ const Index = () => {
               <a href="#best-sellers" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Best Sellers</a>
               <a href="#categories" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Cosmetics</a>
               <a href="#categories" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Household Chemicals</a>
-              <a href="#categories" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Hair Care</a>
-              <a href="#categories" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Personal Care</a>
+              <a href="#categories" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Industrial</a>
               <a href="#contact" className="text-muted-foreground hover:text-primary whitespace-nowrap transition-colors">Contact Us</a>
             </div>
           </div>
@@ -213,25 +239,44 @@ const Index = () => {
               View All <ChevronRight className="h-3.5 w-3.5" />
             </a>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((cat, i) => (
-              <motion.div
-                key={cat.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
-              >
-                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-primary-foreground font-sans font-semibold text-sm">{cat.name}</h3>
-                  <p className="text-primary-foreground/70 text-xs">{cat.count} Products</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {catsLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-xl aspect-[4/3] bg-secondary/50 animate-pulse" />
+              ))}
+            </div>
+          ) : dbCategories.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              No categories yet — add some from the staff dashboard.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {dbCategories.map((cat, i) => {
+                const imgSrc = cat.image_url || categoryFallbacks[cat.name] || cleaner;
+                return (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
+                  >
+                    <img
+                      src={imgSrc}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h3 className="text-primary-foreground font-sans font-semibold text-sm">{cat.name}</h3>
+                      <p className="text-primary-foreground/70 text-xs">{cat.product_count ?? 0} Products</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -241,16 +286,26 @@ const Index = () => {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold">✨ New Arrivals</h2>
           </div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-5"
-          >
-            {newArrivals.map((product, i) => (
-              <ProductCard key={product.name} product={product} index={i} />
-            ))}
-          </motion.div>
+          {newLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+              {[...Array(4)].map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          ) : newArrivals.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              No new arrivals yet — staff can add products from the dashboard.
+            </p>
+          ) : (
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-5"
+            >
+              {newArrivals.map((product, i) => (
+                <ProductCard key={product.id} product={product} index={i} onAddToCart={addToCart} />
+              ))}
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -282,16 +337,26 @@ const Index = () => {
               View All <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
-          >
-            {bestSellers.map((product, i) => (
-              <ProductCard key={`${product.name}-${i}`} product={product} index={i} />
-            ))}
-          </motion.div>
+          {bestLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+              {[...Array(8)].map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          ) : bestSellers.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              No best sellers yet — staff can mark products from the dashboard.
+            </p>
+          ) : (
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+            >
+              {bestSellers.map((product, i) => (
+                <ProductCard key={product.id} product={product} index={i} onAddToCart={addToCart} />
+              ))}
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -343,8 +408,7 @@ const Index = () => {
               <div className="space-y-2 text-sm text-primary-foreground/60">
                 <a href="#categories" className="block hover:text-accent transition-colors">Cosmetics</a>
                 <a href="#categories" className="block hover:text-accent transition-colors">Household Chemicals</a>
-                <a href="#categories" className="block hover:text-accent transition-colors">Hair Care</a>
-                <a href="#categories" className="block hover:text-accent transition-colors">Personal Care</a>
+                <a href="#categories" className="block hover:text-accent transition-colors">Industrial</a>
               </div>
             </div>
             <div>
@@ -367,6 +431,9 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Cart sidebar — rendered here so it's always available on the storefront */}
+      <CartSheet />
     </div>
   );
 };

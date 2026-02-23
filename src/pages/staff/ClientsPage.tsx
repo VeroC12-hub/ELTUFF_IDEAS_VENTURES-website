@@ -1,0 +1,185 @@
+import { useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useClients, ClientProfile } from "@/hooks/useClients";
+import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard } from "lucide-react";
+import { format } from "date-fns";
+
+const navGroups = [
+  { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
+  { label: "Sales", items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
+  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }] },
+  { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
+  { label: "System", items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
+];
+
+export default function ClientsPage() {
+  const { data: clients = [], isLoading } = useClients();
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<ClientProfile | null>(null);
+
+  const filtered = clients.filter(c =>
+    c.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    c.email.toLowerCase().includes(search.toLowerCase()) ||
+    (c.company_name ?? "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const initials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <DashboardLayout navGroups={navGroups} portalName="Staff Portal">
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Clients</h1>
+          <p className="text-muted-foreground text-sm">{clients.length} registered client{clients.length !== 1 ? "s" : ""}</p>
+        </div>
+
+        <Input
+          placeholder="Search by name, email or company…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left p-3 font-medium text-muted-foreground">Client</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Contact</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Orders</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Total Spent</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Joined</th>
+                  <th className="text-right p-3 font-medium text-muted-foreground">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      {[...Array(7)].map((_, j) => (
+                        <td key={j} className="p-3">
+                          <div className="h-4 bg-secondary/50 rounded animate-pulse" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      {search ? "No clients match your search" : "No clients yet"}
+                    </td>
+                  </tr>
+                ) : filtered.map(c => (
+                  <tr key={c.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">
+                          {initials(c.full_name || c.email)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{c.full_name || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{c.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-muted-foreground">{c.company_name || "—"}</td>
+                    <td className="p-3 text-muted-foreground">{c.phone || "—"}</td>
+                    <td className="p-3 font-medium">{c.order_count ?? 0}</td>
+                    <td className="p-3 font-medium">₵ {(c.total_spent ?? 0).toFixed(2)}</td>
+                    <td className="p-3 text-muted-foreground text-xs">
+                      {format(new Date(c.created_at), "MMM d, yyyy")}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => setSelected(c)}
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Client Detail Dialog */}
+      <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Client Profile</DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-5 py-2">
+              {/* Avatar + name */}
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold">
+                  {initials(selected.full_name || selected.email)}
+                </div>
+                <div>
+                  <p className="font-semibold text-lg">{selected.full_name || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{selected.email}</p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-secondary/40 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <ShoppingCart className="h-4 w-4" />
+                    <span className="text-xs">Total Orders</span>
+                  </div>
+                  <p className="text-xl font-bold">{selected.order_count ?? 0}</p>
+                </div>
+                <div className="bg-secondary/40 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <DollarSign className="h-4 w-4" />
+                    <span className="text-xs">Total Spent</span>
+                  </div>
+                  <p className="text-xl font-bold">₵ {(selected.total_spent ?? 0).toFixed(2)}</p>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2 text-sm">
+                {selected.company_name && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Building2 className="h-4 w-4 shrink-0" />
+                    <span>{selected.company_name}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span>{selected.email}</span>
+                </div>
+                {selected.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span>{selected.phone}</span>
+                  </div>
+                )}
+                {selected.address && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span>{selected.address}</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground border-t border-border pt-3">
+                Client since {format(new Date(selected.created_at), "MMMM d, yyyy")}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+}

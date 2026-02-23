@@ -19,19 +19,28 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           name: string
+          show_on_storefront: boolean
+          sort_order: number
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name: string
+          show_on_storefront?: boolean
+          sort_order?: number
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
+          show_on_storefront?: boolean
+          sort_order?: number
         }
         Relationships: []
       }
@@ -262,9 +271,12 @@ export type Database = {
           is_active: boolean
           min_stock_level: number
           name: string
+          old_price: number | null
           price: number
           sku: string | null
           stock_quantity: number
+          storefront_section: string | null
+          tag: string | null
           unit: string
           updated_at: string
         }
@@ -278,9 +290,12 @@ export type Database = {
           is_active?: boolean
           min_stock_level?: number
           name: string
+          old_price?: number | null
           price?: number
           sku?: string | null
           stock_quantity?: number
+          storefront_section?: string | null
+          tag?: string | null
           unit?: string
           updated_at?: string
         }
@@ -294,9 +309,12 @@ export type Database = {
           is_active?: boolean
           min_stock_level?: number
           name?: string
+          old_price?: number | null
           price?: number
           sku?: string | null
           stock_quantity?: number
+          storefront_section?: string | null
+          tag?: string | null
           unit?: string
           updated_at?: string
         }
