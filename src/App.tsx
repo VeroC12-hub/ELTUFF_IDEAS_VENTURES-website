@@ -19,6 +19,13 @@ import OrdersPage from "./pages/staff/OrdersPage";
 import InvoicesPage from "./pages/staff/InvoicesPage";
 import ClientOrdersPage from "./pages/client/OrdersPage";
 import ClientInvoicesPage from "./pages/client/InvoicesPage";
+import StaffReportsPage from "./pages/staff/ReportsPage";
+import StaffSettingsPage from "./pages/staff/SettingsPage";
+import MaterialsPage from "./pages/staff/production/MaterialsPage";
+import RecipesPage from "./pages/staff/production/RecipesPage";
+import CalculatorPage from "./pages/staff/production/CalculatorPage";
+import ClientReportsPage from "./pages/client/ReportsPage";
+import ClientSettingsPage from "./pages/client/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +118,62 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <InvoicesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/reports"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <StaffReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/reports"
+              element={
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <ClientReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/settings"
+              element={
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <ClientSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/production/recipes"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RecipesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/production/materials"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <MaterialsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/production/calculator"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <CalculatorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/settings"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <StaffSettingsPage />
                 </ProtectedRoute>
               }
             />

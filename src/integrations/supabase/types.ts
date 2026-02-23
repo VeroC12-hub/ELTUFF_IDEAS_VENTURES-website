@@ -44,6 +44,171 @@ export type Database = {
         }
         Relationships: []
       }
+      material_price_history: {
+        Row: {
+          id:          string
+          material_id: string
+          old_price:   number
+          new_price:   number
+          changed_by:  string | null
+          notes:       string | null
+          created_at:  string
+        }
+        Insert: {
+          id?:          string
+          material_id:  string
+          old_price:    number
+          new_price:    number
+          changed_by?:  string | null
+          notes?:       string | null
+          created_at?:  string
+        }
+        Update: {
+          id?:          string
+          material_id?: string
+          old_price?:   number
+          new_price?:   number
+          changed_by?:  string | null
+          notes?:       string | null
+          created_at?:  string
+        }
+        Relationships: [
+          { foreignKeyName: "material_price_history_material_id_fkey"; columns: ["material_id"]; isOneToOne: false; referencedRelation: "raw_materials"; referencedColumns: ["id"] }
+        ]
+      }
+      raw_materials: {
+        Row: {
+          id:            string
+          name:          string
+          unit:          string
+          cost_per_unit: number
+          supplier:      string | null
+          notes:         string | null
+          is_active:     boolean
+          created_by:    string | null
+          created_at:    string
+          updated_at:    string
+        }
+        Insert: {
+          id?:            string
+          name:           string
+          unit?:          string
+          cost_per_unit?: number
+          supplier?:      string | null
+          notes?:         string | null
+          is_active?:     boolean
+          created_by?:    string | null
+          created_at?:    string
+          updated_at?:    string
+        }
+        Update: {
+          id?:            string
+          name?:          string
+          unit?:          string
+          cost_per_unit?: number
+          supplier?:      string | null
+          notes?:         string | null
+          is_active?:     boolean
+          created_by?:    string | null
+          created_at?:    string
+          updated_at?:    string
+        }
+        Relationships: []
+      }
+      recipes: {
+        Row: {
+          id:          string
+          name:        string
+          product_id:  string | null
+          batch_yield: number
+          yield_unit:  string
+          notes:       string | null
+          is_active:   boolean
+          created_by:  string | null
+          created_at:  string
+          updated_at:  string
+        }
+        Insert: {
+          id?:          string
+          name:         string
+          product_id?:  string | null
+          batch_yield?: number
+          yield_unit?:  string
+          notes?:       string | null
+          is_active?:   boolean
+          created_by?:  string | null
+          created_at?:  string
+          updated_at?:  string
+        }
+        Update: {
+          id?:          string
+          name?:        string
+          product_id?:  string | null
+          batch_yield?: number
+          yield_unit?:  string
+          notes?:       string | null
+          is_active?:   boolean
+          created_by?:  string | null
+          created_at?:  string
+          updated_at?:  string
+        }
+        Relationships: [
+          { foreignKeyName: "recipes_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] }
+        ]
+      }
+      recipe_ingredients: {
+        Row: {
+          id:                 string
+          recipe_id:          string
+          material_id:        string
+          quantity_per_batch: number
+          created_at:         string
+        }
+        Insert: {
+          id?:                 string
+          recipe_id:           string
+          material_id:         string
+          quantity_per_batch?: number
+          created_at?:         string
+        }
+        Update: {
+          id?:                 string
+          recipe_id?:          string
+          material_id?:        string
+          quantity_per_batch?: number
+          created_at?:         string
+        }
+        Relationships: [
+          { foreignKeyName: "recipe_ingredients_recipe_id_fkey";   columns: ["recipe_id"];   isOneToOne: false; referencedRelation: "recipes";       referencedColumns: ["id"] },
+          { foreignKeyName: "recipe_ingredients_material_id_fkey"; columns: ["material_id"]; isOneToOne: false; referencedRelation: "raw_materials"; referencedColumns: ["id"] }
+        ]
+      }
+      recipe_overheads: {
+        Row: {
+          id:              string
+          recipe_id:       string
+          label:           string
+          cost_per_batch:  number
+          created_at:      string
+        }
+        Insert: {
+          id?:              string
+          recipe_id:        string
+          label:            string
+          cost_per_batch?:  number
+          created_at?:      string
+        }
+        Update: {
+          id?:              string
+          recipe_id?:       string
+          label?:           string
+          cost_per_batch?:  number
+          created_at?:      string
+        }
+        Relationships: [
+          { foreignKeyName: "recipe_overheads_recipe_id_fkey"; columns: ["recipe_id"]; isOneToOne: false; referencedRelation: "recipes"; referencedColumns: ["id"] }
+        ]
+      }
       inventory_logs: {
         Row: {
           change_amount: number
