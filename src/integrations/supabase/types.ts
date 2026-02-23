@@ -532,6 +532,178 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          account_id:   string | null
+          amount:       number
+          category:     string
+          created_at:   string
+          created_by:   string | null
+          description:  string
+          expense_date: string
+          id:           string
+          notes:        string | null
+          receipt_ref:  string | null
+          updated_at:   string
+        }
+        Insert: {
+          account_id?:   string | null
+          amount:        number
+          category?:     string
+          created_at?:   string
+          created_by?:   string | null
+          description:   string
+          expense_date?: string
+          id?:           string
+          notes?:        string | null
+          receipt_ref?:  string | null
+          updated_at?:   string
+        }
+        Update: {
+          account_id?:   string | null
+          amount?:       number
+          category?:     string
+          created_at?:   string
+          created_by?:   string | null
+          description?:  string
+          expense_date?: string
+          id?:           string
+          notes?:        string | null
+          receipt_ref?:  string | null
+          updated_at?:   string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "payment_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_accounts: {
+        Row: {
+          account_type: string
+          balance:      number
+          created_at:   string
+          currency:     string
+          id:           string
+          is_active:    boolean
+          name:         string
+          notes:        string | null
+          updated_at:   string
+        }
+        Insert: {
+          account_type?: string
+          balance?:      number
+          created_at?:   string
+          currency?:     string
+          id?:           string
+          is_active?:    boolean
+          name:          string
+          notes?:        string | null
+          updated_at?:   string
+        }
+        Update: {
+          account_type?: string
+          balance?:      number
+          created_at?:   string
+          currency?:     string
+          id?:           string
+          is_active?:    boolean
+          name?:         string
+          notes?:        string | null
+          updated_at?:   string
+        }
+        Relationships: []
+      }
+      quote_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          quantity: number
+          quote_id: string
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          quote_id: string
+          total_price?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          quote_id?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          quote_number: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          tax_pct: number
+          total_amount: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          quote_number?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_pct?: number
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          quote_number?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_pct?: number
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

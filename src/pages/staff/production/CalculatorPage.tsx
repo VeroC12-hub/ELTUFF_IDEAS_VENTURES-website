@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useRecipes, useRawMaterials } from "@/hooks/useProduction";
 import { calcRecipeCost } from "./RecipesPage";
+import { loadDefaults } from "@/pages/staff/SettingsPage";
 import {
   LayoutDashboard, Users, Package, Receipt, BarChart3, Settings,
   ShoppingCart, UserPlus, Warehouse, CreditCard, ClipboardList,
@@ -28,6 +29,21 @@ export default function CalculatorPage() {
   const [sellPrice,   setSellPrice]   = useState("");
   const [markup,      setMarkup]      = useState("50");
   const [fixedCosts,  setFixedCosts]  = useState("0");
+  const [ratesOpen,   setRatesOpen]   = useState(false);
+
+  // ── Tax & overhead rates (pre-filled from Settings, overridable per-session)
+  const savedDefaults = useMemo(() => loadDefaults(), []);
+  const [rates, setRates] = useState({
+    utilities_pct:     savedDefaults.utilities_pct,
+    labour_pct:        savedDefaults.labour_pct,
+    packaging_pct:     savedDefaults.packaging_pct,
+    equipment_dep_pct: savedDefaults.equipment_dep_pct,
+    vat_pct:           savedDefaults.vat_pct,
+    nhil_pct:          savedDefaults.nhil_pct,
+    getfund_pct:       savedDefaults.getfund_pct,
+  });
+  const setRate = (key: keyof typeof rates, val: string) =>
+    setRates(r => ({ ...r, [key]: parseFloat(val) || 0 }));
 
   const recipe = activeRecipes.find(r => r.id === selectedId) ?? null;
 
@@ -40,30 +56,46 @@ export default function CalculatorPage() {
     const totalMat    = matCost  * batchCount;
     const totalOh     = ohCost   * batchCount;
     const totalCost   = total    * batchCount;
-    return { batchCount, matCost, ohCost, total, costPerUnit, totalUnits, totalMat, totalOh, totalCost };
-  }, [recipe, batches]);
 
-  // Sync markup → sellPrice and vice-versa
+    // Per-unit overhead additions (as % of bare costPerUnit)
+    const utilitiesCost  = costPerUnit * (rates.utilities_pct     / 100);
+    const labourCost     = costPerUnit * (rates.labour_pct        / 100);
+    const packagingCost  = costPerUnit * (rates.packaging_pct     / 100);
+    const equipDepCost   = costPerUnit * (rates.equipment_dep_pct / 100);
+    const totalOverheadPct = rates.utilities_pct + rates.labour_pct + rates.packaging_pct + rates.equipment_dep_pct;
+    const fullCostPerUnit  = costPerUnit * (1 + totalOverheadPct / 100);
+    const totalTaxPct      = rates.vat_pct + rates.nhil_pct + rates.getfund_pct;
+
+    return {
+      batchCount, matCost, ohCost, total, costPerUnit,
+      totalUnits, totalMat, totalOh, totalCost,
+      utilitiesCost, labourCost, packagingCost, equipDepCost,
+      fullCostPerUnit, totalOverheadPct, totalTaxPct,
+    };
+  }, [recipe, batches, rates]);
+
+  // Sync markup → sellPrice (uses fullCostPerUnit as base)
   const handleMarkupChange = (val: string) => {
     setMarkup(val);
     if (calc) {
       const m = parseFloat(val) || 0;
-      setSellPrice((calc.costPerUnit * (1 + m / 100)).toFixed(2));
+      setSellPrice((calc.fullCostPerUnit * (1 + m / 100)).toFixed(2));
     }
   };
   const handleSellPriceChange = (val: string) => {
     setSellPrice(val);
     if (calc) {
       const sp = parseFloat(val) || 0;
-      if (sp > 0 && calc.costPerUnit > 0) {
-        setMarkup((((sp - calc.costPerUnit) / calc.costPerUnit) * 100).toFixed(1));
+      if (sp > 0 && calc.fullCostPerUnit > 0) {
+        setMarkup((((sp - calc.fullCostPerUnit) / calc.fullCostPerUnit) * 100).toFixed(1));
       }
     }
   };
 
-  const sp        = parseFloat(sellPrice) || 0;
-  const marginPct = sp > 0 && calc ? ((sp - calc.costPerUnit) / sp) * 100 : 0;
-  const profitUnit= sp - (calc?.costPerUnit ?? 0);
+  const sp          = parseFloat(sellPrice) || 0;
+  const finalPrice  = calc ? sp * (1 + (calc.totalTaxPct / 100)) : 0;
+  const marginPct   = sp > 0 && calc ? ((sp - calc.fullCostPerUnit) / sp) * 100 : 0;
+  const profitUnit  = sp - (calc?.fullCostPerUnit ?? 0);
   const totalProfit = profitUnit * (calc?.totalUnits ?? 0);
 
   return (
@@ -119,6 +151,94 @@ export default function CalculatorPage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* ── Tax & Overhead Rates panel ──────────────────────────────── */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            className="w-full flex items-center justify-between p-5 text-left"
+            onClick={() => setRatesOpen(o => !o)}
+          >
+            <div>
+              <h3 className="font-display font-semibold">Tax & Overhead Rates</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {calc
+                  ? `+${calc.totalOverheadPct.toFixed(1)}% overhead · +${calc.totalTaxPct.toFixed(1)}% tax — pre-filled from Settings`
+                  : "Pre-filled from Settings defaults — adjustable per session"}
+              </p>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${ratesOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {ratesOpen && (
+            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+              {/* Production overheads */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Production Overheads (% of base ingredient cost)
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { key: "utilities_pct",     label: "Utilities",         hint: "Avg 3–5%"   },
+                    { key: "labour_pct",         label: "Labour",            hint: "Avg 20–25%" },
+                    { key: "packaging_pct",      label: "Packaging",         hint: "Avg 10–15%" },
+                    { key: "equipment_dep_pct",  label: "Equipment Dep.",    hint: "Avg 2–5%"   },
+                  ].map(f => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-xs font-medium">{f.label} %</label>
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={rates[f.key as keyof typeof rates]}
+                        onChange={e => setRate(f.key as keyof typeof rates, e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Statutory taxes */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Statutory Taxes (applied to selling price)
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: "vat_pct",     label: "VAT %",     hint: "Std 15%"  },
+                    { key: "nhil_pct",    label: "NHIL %",    hint: "Std 2.5%" },
+                    { key: "getfund_pct", label: "GETFUND %", hint: "Std 2.5%" },
+                  ].map(f => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-xs font-medium">{f.label}</label>
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={rates[f.key as keyof typeof rates]}
+                        onChange={e => setRate(f.key as keyof typeof rates, e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setRates({
+                  utilities_pct:     savedDefaults.utilities_pct,
+                  labour_pct:        savedDefaults.labour_pct,
+                  packaging_pct:     savedDefaults.packaging_pct,
+                  equipment_dep_pct: savedDefaults.equipment_dep_pct,
+                  vat_pct:           savedDefaults.vat_pct,
+                  nhil_pct:          savedDefaults.nhil_pct,
+                  getfund_pct:       savedDefaults.getfund_pct,
+                })}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Reset to Settings defaults
+              </button>
+            </div>
+          )}
         </div>
 
         {!recipe ? (
@@ -199,12 +319,28 @@ export default function CalculatorPage() {
                     <span>₵ {calc.totalOh.toFixed(2)}</span>
                   </div>
                   <div className="px-5 py-3 flex justify-between text-sm font-bold">
-                    <span>Total production cost</span>
+                    <span>Base production cost</span>
                     <span>₵ {calc.totalCost.toFixed(4)}</span>
                   </div>
+                  <div className="px-5 py-2.5 flex justify-between text-sm text-muted-foreground">
+                    <span>+ Utilities ({rates.utilities_pct}%)</span>
+                    <span>₵ {(calc.utilitiesCost * calc.batchCount).toFixed(4)}</span>
+                  </div>
+                  <div className="px-5 py-2.5 flex justify-between text-sm text-muted-foreground">
+                    <span>+ Labour ({rates.labour_pct}%)</span>
+                    <span>₵ {(calc.labourCost * calc.batchCount).toFixed(4)}</span>
+                  </div>
+                  <div className="px-5 py-2.5 flex justify-between text-sm text-muted-foreground">
+                    <span>+ Packaging ({rates.packaging_pct}%)</span>
+                    <span>₵ {(calc.packagingCost * calc.batchCount).toFixed(4)}</span>
+                  </div>
+                  <div className="px-5 py-2.5 flex justify-between text-sm text-muted-foreground">
+                    <span>+ Equipment Dep. ({rates.equipment_dep_pct}%)</span>
+                    <span>₵ {(calc.equipDepCost * calc.batchCount).toFixed(4)}</span>
+                  </div>
                   <div className="px-5 py-3 flex justify-between text-base font-bold text-primary">
-                    <span>Cost per {recipe.yield_unit}</span>
-                    <span>₵ {calc.costPerUnit.toFixed(4)}</span>
+                    <span>Full cost per {recipe.yield_unit}</span>
+                    <span>₵ {calc.fullCostPerUnit.toFixed(4)}</span>
                   </div>
                 </div>
               </div>
@@ -227,7 +363,7 @@ export default function CalculatorPage() {
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Profit added on top of cost per {recipe.yield_unit}
+                    Markup on full cost per {recipe.yield_unit}
                   </p>
                 </div>
 
@@ -244,7 +380,7 @@ export default function CalculatorPage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Cost: ₵ {calc.costPerUnit.toFixed(4)} · updates markup automatically
+                    Full cost: ₵ {calc.fullCostPerUnit.toFixed(4)} · updates markup automatically
                   </p>
                 </div>
               </div>
@@ -315,10 +451,25 @@ export default function CalculatorPage() {
                 </div>
               )}
 
-              {/* Warning if selling below cost */}
-              {sp > 0 && sp < calc.costPerUnit && (
+              {/* Final price incl. VAT + levies */}
+              {sp > 0 && calc.totalTaxPct > 0 && (
+                <div className="bg-muted/40 rounded-xl p-4 flex items-center justify-between text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Final price to customer (incl. {calc.totalTaxPct.toFixed(1)}% taxes)</p>
+                    <p className="text-lg font-bold mt-0.5">₵ {finalPrice.toFixed(2)}</p>
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground space-y-0.5">
+                    <p>Sell price: ₵ {sp.toFixed(2)}</p>
+                    <p>VAT ({rates.vat_pct}%): ₵ {(sp * rates.vat_pct / 100).toFixed(2)}</p>
+                    <p>NHIL ({rates.nhil_pct}%) + GETFUND ({rates.getfund_pct}%): ₵ {(sp * (rates.nhil_pct + rates.getfund_pct) / 100).toFixed(2)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning if selling below full cost */}
+              {sp > 0 && sp < calc.fullCostPerUnit && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3 text-sm text-destructive font-medium">
-                  ⚠ Selling price is below cost per unit. You are losing ₵ {Math.abs(profitUnit).toFixed(4)} per {recipe.yield_unit}.
+                  ⚠ Selling price is below full cost per unit (₵ {calc.fullCostPerUnit.toFixed(4)}). You are losing ₵ {Math.abs(profitUnit).toFixed(4)} per {recipe.yield_unit}.
                 </div>
               )}
             </div>
@@ -414,7 +565,7 @@ export default function CalculatorPage() {
               <div className="p-5 border-b border-border">
                 <h3 className="font-display font-semibold">Price Sensitivity</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Profit analysis at different markup levels — cost per {recipe.yield_unit}: ₵ {calc.costPerUnit.toFixed(4)}
+                  Full cost per {recipe.yield_unit}: ₵ {calc.fullCostPerUnit.toFixed(4)} · Tax on selling price: {calc.totalTaxPct.toFixed(1)}%
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -423,6 +574,7 @@ export default function CalculatorPage() {
                     <tr className="border-b border-border bg-muted/50">
                       <th className="text-right p-3 font-medium text-muted-foreground">Markup</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Sell Price</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground">Final (incl. tax)</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Profit / Unit</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Margin %</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Batch Profit</th>
@@ -431,12 +583,13 @@ export default function CalculatorPage() {
                   </thead>
                   <tbody>
                     {[10, 20, 30, 40, 50, 75, 100, 150, 200].map(pct => {
-                      const price    = calc.costPerUnit * (1 + pct / 100);
-                      const profit   = price - calc.costPerUnit;
+                      const price    = calc.fullCostPerUnit * (1 + pct / 100);
+                      const final_p  = price * (1 + calc.totalTaxPct / 100);
+                      const profit   = price - calc.fullCostPerUnit;
                       const margin   = (profit / price) * 100;
                       const batchP   = profit * calc.totalUnits;
                       const fixed    = parseFloat(fixedCosts) || 0;
-                      const beU      = (calc.totalCost + fixed) / profit;
+                      const beU      = (calc.totalCost * (1 + calc.totalOverheadPct / 100) + fixed) / profit;
                       const isActive = Math.abs(parseFloat(markup) - pct) < 0.5;
 
                       return (
@@ -444,9 +597,7 @@ export default function CalculatorPage() {
                           key={pct}
                           onClick={() => handleMarkupChange(String(pct))}
                           className={`border-b border-border/50 cursor-pointer transition-colors ${
-                            isActive
-                              ? "bg-primary/5 hover:bg-primary/10"
-                              : "hover:bg-muted/30"
+                            isActive ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/30"
                           }`}
                         >
                           <td className="p-3 text-right font-medium">
@@ -454,7 +605,10 @@ export default function CalculatorPage() {
                             {pct}%
                           </td>
                           <td className="p-3 text-right font-semibold">₵ {price.toFixed(2)}</td>
-                          <td className="p-3 text-right text-success font-medium">₵ {profit.toFixed(4)}</td>
+                          <td className="p-3 text-right text-muted-foreground">₵ {final_p.toFixed(2)}</td>
+                          <td className={`p-3 text-right font-medium ${profit >= 0 ? "text-success" : "text-destructive"}`}>
+                            ₵ {profit.toFixed(4)}
+                          </td>
                           <td className={`p-3 text-right font-medium ${margin >= 20 ? "text-success" : margin >= 10 ? "text-warning" : "text-destructive"}`}>
                             {margin.toFixed(1)}%
                           </td>

@@ -21,6 +21,8 @@ import ClientOrdersPage from "./pages/client/OrdersPage";
 import ClientInvoicesPage from "./pages/client/InvoicesPage";
 import StaffReportsPage from "./pages/staff/ReportsPage";
 import StaffSettingsPage from "./pages/staff/SettingsPage";
+import QuotesPage from "./pages/staff/QuotesPage";
+import AccountsPage from "./pages/staff/AccountsPage";
 import MaterialsPage from "./pages/staff/production/MaterialsPage";
 import RecipesPage from "./pages/staff/production/RecipesPage";
 import CalculatorPage from "./pages/staff/production/CalculatorPage";
@@ -82,6 +84,14 @@ const App = () => (
               }
             />
             <Route
+              path="/staff/quotes"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <QuotesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/staff/products"
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
@@ -118,6 +128,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <InvoicesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/accounts"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <AccountsPage />
                 </ProtectedRoute>
               }
             />

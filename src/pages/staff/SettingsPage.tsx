@@ -41,20 +41,36 @@ interface BusinessDefaults {
   default_tax_pct:   number;
   invoice_due_days:  number;
   payment_terms:     string;
-  low_stock_alert:   number; // days before expiry or units threshold reminder
+  low_stock_alert:   number;
   order_prefix:      string;
   invoice_prefix:    string;
+  // Production cost overheads (% of base material+overhead cost)
+  vat_pct:           number;
+  nhil_pct:          number;
+  getfund_pct:       number;
+  utilities_pct:     number;
+  labour_pct:        number;
+  packaging_pct:     number;
+  equipment_dep_pct: number;
 }
 
 const defaultBusiness: BusinessDefaults = {
   currency_symbol:  "₵",
   currency_code:    "GHS",
-  default_tax_pct:  0,
+  default_tax_pct:  15,
   invoice_due_days: 30,
   payment_terms:    "Payment due within 30 days of invoice date.",
   low_stock_alert:  10,
   order_prefix:     "ORD",
   invoice_prefix:   "INV",
+  // Cosmetics / personal-care industry defaults for Ghana
+  vat_pct:           15,   // Ghana standard VAT
+  nhil_pct:          2.5,  // National Health Insurance Levy
+  getfund_pct:       2.5,  // GETFUND Levy
+  utilities_pct:     4,    // Electricity, water, gas
+  labour_pct:        22,   // Direct labour cost
+  packaging_pct:     12,   // Bottles, labels, cartons
+  equipment_dep_pct: 3,    // Equipment depreciation
 };
 
 function loadDefaults(): BusinessDefaults {
@@ -418,6 +434,84 @@ export default function StaffSettingsPage() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Alert when stock falls at or below this quantity
+                </p>
+              </div>
+            </div>
+
+            {/* Production Taxes & Overheads */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Production Taxes & Overheads
+                </h3>
+                <button
+                  onClick={() => setDefaultsForm(prev => ({
+                    ...prev,
+                    vat_pct: 15, nhil_pct: 2.5, getfund_pct: 2.5,
+                    utilities_pct: 4, labour_pct: 22, packaging_pct: 12, equipment_dep_pct: 3,
+                  }))}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Reset to industry defaults
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Used in the Production Calculator. Based on cosmetics / personal-care industry averages in Ghana.
+              </p>
+
+              {/* Statutory taxes */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Statutory Taxes (applied to selling price)</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: "vat_pct",      label: "VAT",      hint: "Std: 15%"  },
+                    { key: "nhil_pct",     label: "NHIL",     hint: "Std: 2.5%" },
+                    { key: "getfund_pct",  label: "GETFUND",  hint: "Std: 2.5%" },
+                  ].map(f => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-xs font-medium">{f.label} %</label>
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={defaultsForm[f.key as keyof BusinessDefaults] as number}
+                        onChange={e => setDef(f.key as keyof BusinessDefaults, parseFloat(e.target.value) || 0)}
+                      />
+                      <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Production overheads */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Production Overheads (% of base production cost)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: "utilities_pct",     label: "Utilities",           hint: "Industry avg: 3–5%"   },
+                    { key: "labour_pct",         label: "Direct Labour",       hint: "Industry avg: 20–25%" },
+                    { key: "packaging_pct",      label: "Packaging",           hint: "Industry avg: 10–15%" },
+                    { key: "equipment_dep_pct",  label: "Equipment Deprec.",   hint: "Industry avg: 2–5%"   },
+                  ].map(f => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-xs font-medium">{f.label} %</label>
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        value={defaultsForm[f.key as keyof BusinessDefaults] as number}
+                        onChange={e => setDef(f.key as keyof BusinessDefaults, parseFloat(e.target.value) || 0)}
+                      />
+                      <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live total */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 text-xs space-y-1">
+                <p className="font-semibold text-foreground">Total overhead load on production cost</p>
+                <p className="text-muted-foreground">
+                  {(defaultsForm.utilities_pct + defaultsForm.labour_pct + defaultsForm.packaging_pct + defaultsForm.equipment_dep_pct).toFixed(1)}%
+                  overhead + {(defaultsForm.vat_pct + defaultsForm.nhil_pct + defaultsForm.getfund_pct).toFixed(1)}% tax on selling price
                 </p>
               </div>
             </div>
