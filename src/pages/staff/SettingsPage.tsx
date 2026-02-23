@@ -79,7 +79,7 @@ import {
   Settings, ShoppingCart, UserPlus, Warehouse, CreditCard,
   ClipboardList, User, Building2, SlidersHorizontal, KeyRound,
   Save, Loader2,
-, FlaskConical, BookOpen, Calculator } from "lucide-react";
+  FlaskConical, BookOpen, Calculator } from "lucide-react";
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const navGroups = [

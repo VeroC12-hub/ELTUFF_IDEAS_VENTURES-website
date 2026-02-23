@@ -10,8 +10,8 @@ import { useClients } from "@/hooks/useClients";
 import {
   LayoutDashboard, Users, Package, Receipt, FileText, BarChart3,
   Settings, DollarSign, AlertTriangle, ShoppingCart,
-  UserPlus, Warehouse, CreditCard, ClipboardList
-, FlaskConical, BookOpen, Calculator } from "lucide-react";
+  UserPlus, Warehouse, CreditCard, ClipboardList,
+  FlaskConical, BookOpen, Calculator } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell

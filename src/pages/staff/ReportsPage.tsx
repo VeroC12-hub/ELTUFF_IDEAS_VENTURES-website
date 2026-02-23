@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Package, Receipt, FileText, BarChart3,
   Settings, DollarSign, ShoppingCart, UserPlus, Warehouse,
   CreditCard, ClipboardList, TrendingUp, TrendingDown, Calendar,
-, FlaskConical, BookOpen, Calculator } from "lucide-react";
+  FlaskConical, BookOpen, Calculator } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend,
