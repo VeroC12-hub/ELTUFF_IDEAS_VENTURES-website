@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eltuff Ideas Ventures – Staff &amp; Client Portal User Manual</title>
+  <style>
+    /* ── Reset ────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Body (screen preview) ───────────────────────────────────────────── */
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      background: #cdd6d6;
+      color: #1a1a1a;
+    }
+
+    /* ── Print setup ────────────────────────────────────────────────────── */
+    @page { size: A4 portrait; margin: 0; }
+
+    @media print {
+      body { background: white; }
+      .page { margin: 0; box-shadow: none; }
+      .page { page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .no-print { display: none !important; }
+    }
+
+    /* ── Page shell ─────────────────────────────────────────────────────── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      position: relative;
+      background-image: url('letterhead.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      margin: 0 auto 14px auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,.22);
+      overflow: hidden;
+    }
+
+    /* ── Content safe zone (avoids letterhead header + footer) ──────────── */
+    .content {
+      position: absolute;
+      top: 46mm;
+      left: 18mm;
+      right: 18mm;
+      /* use height instead of bottom so overflow:hidden clips reliably */
+      height: calc(297mm - 46mm - 42mm);
+      overflow: hidden;
+    }
+
+    /* ── Cover page content centred ─────────────────────────────────────── */
+    .page.cover .content {
+      top: 55mm;
+      height: calc(297mm - 55mm - 42mm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    h1.doc-title {
+      font-size: 26pt;
+      font-weight: 800;
+      color: #1aadaa;
+      line-height: 1.15;
+      margin-bottom: 4mm;
+    }
+    h1.doc-sub {
+      font-size: 13pt;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 10mm;
+    }
+    .cover-divider {
+      width: 80mm;
+      height: 3px;
+      background: linear-gradient(90deg, #1aadaa 0%, #bad92c 100%);
+      border-radius: 2px;
+      margin: 6mm auto;
+    }
+    .cover-meta {
+      font-size: 9.5pt;
+      color: #555;
+      line-height: 2;
+    }
+    .cover-meta strong { color: #1aadaa; }
+    .cover-badge {
+      display: inline-block;
+      margin-top: 8mm;
+      padding: 2mm 8mm;
+      background: #1aadaa;
+      color: white;
+      border-radius: 2px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Section headings */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #1aadaa;
+      border-bottom: 2px solid #1aadaa;
+      padding-bottom: 1.5mm;
+      margin-bottom: 4mm;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #157a78;
+      margin: 4mm 0 2mm;
+    }
+    h4 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #333;
+      margin: 3mm 0 1.5mm;
+    }
+    p { font-size: 9pt; line-height: 1.65; margin-bottom: 2mm; }
+    ul, ol { padding-left: 5mm; margin-bottom: 3mm; }
+    li { font-size: 9pt; line-height: 1.6; margin-bottom: 0.8mm; }
+    strong { color: #1a1a1a; }
+    a { color: #1aadaa; text-decoration: none; }
+
+    /* ── Horizontal rule ────────────────────────────────────────────────── */
+    hr.sep { border: none; border-top: 1px solid #d0eded; margin: 3mm 0; }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2mm 0 4mm;
+      font-size: 8.5pt;
+    }
+    thead th {
+      background: #1aadaa;
+      color: white;
+      padding: 2mm 3mm;
+      text-align: left;
+      font-weight: 700;
+      font-size: 8pt;
+    }
+    thead th.center, td.center { text-align: center; }
+    tbody tr:nth-child(even) { background: #f0fafa; }
+    tbody tr:hover { background: #e4f5f5; }
+    td { padding: 1.5mm 3mm; border-bottom: 0.5px solid #d8eaea; vertical-align: top; }
+
+    /* Alternating accent header for wide tables */
+    table.alt thead th { background: #157a78; }
+
+    /* ── Permission matrix ───────────────────────────────────────────────── */
+    .yes    { color: #16a34a; font-weight: 700; font-size: 10pt; }
+    .no     { color: #dc2626; font-size: 10pt; }
+    .part   { color: #d97706; font-weight: 700; font-size: 10pt; }
+
+    /* ── Callout boxes ──────────────────────────────────────────────────── */
+    .tip, .warn, .note, .info {
+      border-radius: 3px;
+      padding: 2mm 3.5mm;
+      margin: 2mm 0 3mm;
+      font-size: 8.5pt;
+      line-height: 1.55;
+    }
+    .tip  { background: #edfdf8; border-left: 3px solid #1aadaa; }
+    .warn { background: #fff8ed; border-left: 3px solid #f59e0b; }
+    .note { background: #f4f4f4; border-left: 3px solid #888; }
+    .info { background: #eff6ff; border-left: 3px solid #3b82f6; }
+    .tip::before  { content: "✔ TIP  ";     font-weight: 700; color: #1aadaa; }
+    .warn::before { content: "⚠ WARNING  "; font-weight: 700; color: #f59e0b; }
+    .note::before { content: "📝 NOTE  ";   font-weight: 700; color: #888; }
+    .info::before { content: "ℹ INFO  ";    font-weight: 700; color: #3b82f6; }
+
+    /* ── Numbered step lists ─────────────────────────────────────────────── */
+    ol.steps { list-style: none; counter-reset: step; padding: 0; margin-bottom: 3mm; }
+    ol.steps > li {
+      counter-increment: step;
+      display: flex;
+      gap: 3mm;
+      margin-bottom: 2mm;
+      align-items: flex-start;
+      font-size: 9pt;
+      line-height: 1.55;
+    }
+    ol.steps > li::before {
+      content: counter(step);
+      min-width: 5.5mm;
+      height: 5.5mm;
+      border-radius: 50%;
+      background: #1aadaa;
+      color: white;
+      font-size: 7.5pt;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.3mm;
+    }
+
+    /* ── Role badges ─────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 0.4mm 2.5mm;
+      border-radius: 2px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    .b-admin  { background: #7c3aed; color: white; }
+    .b-staff  { background: #1aadaa; color: white; }
+    .b-client { background: #bad92c; color: #1a1a1a; }
+
+    /* ── TOC entries ─────────────────────────────────────────────────────── */
+    .toc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 1.2mm 0;
+      border-bottom: 0.5px dotted #ccc;
+    }
+    .toc-row.l1 { font-weight: 700; font-size: 9.5pt; margin-top: 3mm; color: #1aadaa; }
+    .toc-row.l2 { font-size: 9pt; padding-left: 6mm; }
+    .toc-row.l3 { font-size: 8.5pt; padding-left: 12mm; color: #555; }
+    .toc-pg     { color: #1aadaa; font-size: 8pt; font-weight: 600; flex-shrink: 0; margin-left: 2mm; }
+
+    /* ── Inline code ─────────────────────────────────────────────────────── */
+    code {
+      background: #eef0f0;
+      border-radius: 2px;
+      padding: 0 1.5mm;
+      font-family: 'Cascadia Code', Consolas, monospace;
+      font-size: 7.5pt;
+      color: #c2185b;
+    }
+
+    /* ── Two-column layout ───────────────────────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; }
+
+    /* ── Stat / summary card ─────────────────────────────────────────────── */
+    .card {
+      background: #f0fafa;
+      border: 1px solid #c5e9e8;
+      border-radius: 4px;
+      padding: 3mm;
+    }
+    .card h4 { margin-top: 0; }
+
+    /* ── Page number ─────────────────────────────────────────────────────── */
+    .pg-num {
+      position: absolute;
+      bottom: 35mm;
+      right: 18mm;
+      font-size: 7.5pt;
+      color: #888;
+    }
+    .pg-num span { color: #1aadaa; font-weight: 700; }
+
+    /* ── Screen-only print button ────────────────────────────────────────── */
+    #print-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: #1aadaa;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      z-index: 9999;
+    }
+    #print-btn:hover { background: #157a78; }
+  </style>
+</head>
+<body>
+
+<!-- ────────────────────────────────────────────────────────────────────────
+     SCREEN-ONLY PRINT BUTTON
+     ──────────────────────────────────────────────────────────────────────── -->
+<button id="print-btn" class="no-print" onclick="window.print()">🖨 Print / Save PDF</button>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 1 — COVER
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page cover" id="cover">
+  <div class="content">
+
+    <h1 class="doc-title">Eltuff Ideas Ventures</h1>
+    <div class="cover-divider"></div>
+    <h1 class="doc-sub">Staff &amp; Client Portal<br>User Manual</h1>
+
+    <p style="font-size:9pt;color:#666;margin-bottom:6mm;">
+      Complete guide to the Eltuff Ideas Ventures management platform —<br>
+      covering every feature available to staff and client users.
+    </p>
+
+    <div class="cover-meta">
+      <strong>Document Version:</strong> 1.0<br>
+      <strong>Date:</strong> February 2026<br>
+      <strong>System:</strong> Eltuff Ideas Ventures Business Portal<br>
+      <strong>Audience:</strong> Admin / Staff / Clients<br>
+      <strong>Prepared by:</strong> Nexacore Innovations
+    </div>
+
+    <div class="cover-divider" style="margin-top:8mm;"></div>
+
+    <p style="font-size:8pt;color:#888;margin-top:4mm;">
+      Designed &amp; developed by
+      <a href="https://nexacore-innovations.com" style="color:#1aadaa;font-weight:700;">Nexacore Innovations</a><br>
+      nexacore-innovations.com &nbsp;|&nbsp; info@nexacore-innovations.com
+    </p>
+
+    <div class="cover-badge">Confidential — Internal &amp; Client Use Only</div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 2 — TABLE OF CONTENTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="toc">
+  <div class="content">
+    <h2>Table of Contents</h2>
+
+    <!-- Part A: Introduction -->
+    <div class="toc-row l1"><span>Part A — Introduction &amp; Getting Started</span><span class="toc-pg">3</span></div>
+    <div class="toc-row l2"><span>1. System Overview</span><span class="toc-pg">3</span></div>
+    <div class="toc-row l3"><span>1.1 About this Manual</span><span class="toc-pg">3</span></div>
+    <div class="toc-row l3"><span>1.2 Platform Architecture</span><span class="toc-pg">3</span></div>
+    <div class="toc-row l3"><span>1.3 User Roles &amp; Permissions</span><span class="toc-pg">3</span></div>
+    <div class="toc-row l2"><span>2. Logging In &amp; Navigation</span><span class="toc-pg">4</span></div>
+    <div class="toc-row l3"><span>2.1 Accessing the Portal</span><span class="toc-pg">4</span></div>
+    <div class="toc-row l3"><span>2.2 Staff Navigation Overview</span><span class="toc-pg">4</span></div>
+    <div class="toc-row l3"><span>2.3 Client Navigation Overview</span><span class="toc-pg">4</span></div>
+
+    <!-- Part B: Staff Manual -->
+    <div class="toc-row l1"><span>Part B — Staff Portal Manual</span><span class="toc-pg">5</span></div>
+    <div class="toc-row l2"><span>3. Dashboard</span><span class="toc-pg">5</span></div>
+    <div class="toc-row l2"><span>4. Sales — Quotes</span><span class="toc-pg">5</span></div>
+    <div class="toc-row l3"><span>4.1 Creating a Quote</span><span class="toc-pg">5</span></div>
+    <div class="toc-row l3"><span>4.2 Managing Quotes &amp; Statuses</span><span class="toc-pg">6</span></div>
+    <div class="toc-row l3"><span>4.3 Converting a Quote to Invoice</span><span class="toc-pg">6</span></div>
+    <div class="toc-row l2"><span>5. Sales — Invoices &amp; Orders</span><span class="toc-pg">6</span></div>
+    <div class="toc-row l3"><span>5.1 Creating an Invoice</span><span class="toc-pg">6</span></div>
+    <div class="toc-row l3"><span>5.2 Managing Orders</span><span class="toc-pg">7</span></div>
+    <div class="toc-row l2"><span>6. Client Management</span><span class="toc-pg">7</span></div>
+    <div class="toc-row l2"><span>7. Inventory &amp; Products</span><span class="toc-pg">8</span></div>
+    <div class="toc-row l3"><span>7.1 Managing Raw Materials</span><span class="toc-pg">8</span></div>
+    <div class="toc-row l3"><span>7.2 Managing Products</span><span class="toc-pg">8</span></div>
+    <div class="toc-row l2"><span>8. Production Module</span><span class="toc-pg">9</span></div>
+    <div class="toc-row l3"><span>8.1 Raw Materials</span><span class="toc-pg">9</span></div>
+    <div class="toc-row l3"><span>8.2 Recipes</span><span class="toc-pg">9</span></div>
+    <div class="toc-row l3"><span>8.3 Batch Management</span><span class="toc-pg">10</span></div>
+    <div class="toc-row l3"><span>8.4 Production Calculator</span><span class="toc-pg">10</span></div>
+    <div class="toc-row l2"><span>9. Finance — Accounts &amp; Expenses</span><span class="toc-pg">11</span></div>
+    <div class="toc-row l3"><span>9.1 Payment Accounts</span><span class="toc-pg">11</span></div>
+    <div class="toc-row l3"><span>9.2 Expense Ledger</span><span class="toc-pg">11</span></div>
+    <div class="toc-row l3"><span>9.3 Profit &amp; Loss Summary</span><span class="toc-pg">12</span></div>
+    <div class="toc-row l2"><span>10. Reports &amp; Exports</span><span class="toc-pg">12</span></div>
+    <div class="toc-row l3"><span>10.1 Date Filters &amp; Period Comparison</span><span class="toc-pg">12</span></div>
+    <div class="toc-row l3"><span>10.2 Exporting Reports (PDF / CSV / Excel)</span><span class="toc-pg">13</span></div>
+    <div class="toc-row l2"><span>11. Settings</span><span class="toc-pg">13</span></div>
+    <div class="toc-row l3"><span>11.1 Company Profile</span><span class="toc-pg">13</span></div>
+    <div class="toc-row l3"><span>11.2 Business Defaults &amp; Tax Rates</span><span class="toc-pg">13</span></div>
+    <div class="toc-row l3"><span>11.3 Staff Accounts</span><span class="toc-pg">14</span></div>
+
+    <!-- Part C: Client Manual -->
+    <div class="toc-row l1"><span>Part C — Client Portal Manual</span><span class="toc-pg">14</span></div>
+    <div class="toc-row l2"><span>12. Client Dashboard</span><span class="toc-pg">14</span></div>
+    <div class="toc-row l2"><span>13. My Orders &amp; Invoices</span><span class="toc-pg">15</span></div>
+    <div class="toc-row l2"><span>14. Client Reports</span><span class="toc-pg">15</span></div>
+    <div class="toc-row l2"><span>15. Account Settings</span><span class="toc-pg">15</span></div>
+
+    <!-- Appendix -->
+    <div class="toc-row l1"><span>Appendix</span><span class="toc-pg">16</span></div>
+    <div class="toc-row l2"><span>A. Full Role Permissions Matrix</span><span class="toc-pg">16</span></div>
+    <div class="toc-row l2"><span>B. Frequently Asked Questions</span><span class="toc-pg">17</span></div>
+    <div class="toc-row l2"><span>C. Glossary</span><span class="toc-pg">17</span></div>
+    <div class="toc-row l2"><span>D. Support &amp; Contact</span><span class="toc-pg">18</span></div>
+
+  </div>
+  <div class="pg-num">Page <span>2</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 3 — SYSTEM OVERVIEW & USER ROLES
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="overview">
+  <div class="content">
+
+    <h2>Part A — Introduction &amp; Getting Started</h2>
+
+    <h3>1. System Overview</h3>
+
+    <h4>1.1 About this Manual</h4>
+    <p>
+      This manual is the official reference guide for the <strong>Eltuff Ideas Ventures Business Portal</strong> —
+      a web-based management platform designed and developed by
+      <strong>Nexacore Innovations</strong> (<a href="https://nexacore-innovations.com">nexacore-innovations.com</a>).
+      It covers every module available to <strong>Admin</strong>, <strong>Staff</strong>, and <strong>Client</strong> users.
+    </p>
+    <p>
+      The portal is accessible from any modern web browser on desktop or mobile. No software installation is required.
+    </p>
+
+    <h4>1.2 Platform Architecture</h4>
+    <p>
+      The platform is built on a secure cloud infrastructure with role-based access control (RBAC).
+      All data is encrypted in transit and at rest. The portal is divided into two primary areas:
+    </p>
+    <div class="two-col" style="margin:2mm 0 3mm;">
+      <div class="card">
+        <h4>Staff Portal <span class="badge b-staff">STAFF</span> <span class="badge b-admin">ADMIN</span></h4>
+        <p>Full business management: quotes, invoices, orders, clients, inventory, production, finance, reports, and settings.</p>
+      </div>
+      <div class="card">
+        <h4>Client Portal <span class="badge b-client">CLIENT</span></h4>
+        <p>Self-service view of orders, invoices, reports, and account settings. Read-only on most data.</p>
+      </div>
+    </div>
+
+    <h4>1.3 User Roles &amp; Permissions</h4>
+    <p>There are three user roles in the system. Each role controls which pages and actions a user can access:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Who it's for</th>
+          <th>Portal Access</th>
+          <th>Key Capabilities</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge b-admin">ADMIN</span></td>
+          <td>Business owner / manager</td>
+          <td>Staff Portal + Settings</td>
+          <td>Full access to all data, promote/demote staff, view all reports, manage system settings</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-staff">STAFF</span></td>
+          <td>Employees, operators</td>
+          <td>Staff Portal</td>
+          <td>Create &amp; manage quotes, invoices, orders, clients, inventory, production, expenses; view reports</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-client">CLIENT</span></td>
+          <td>Business customers</td>
+          <td>Client Portal</td>
+          <td>View own orders &amp; invoices, download reports, update account profile</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      A user's role is assigned by an Admin from the Settings → Staff Accounts page.
+      Clients register themselves and are automatically assigned the Client role.
+    </div>
+
+    <hr class="sep" />
+
+    <h3>2. Logging In &amp; Navigation</h3>
+
+    <h4>2.1 Accessing the Portal</h4>
+    <ol class="steps">
+      <li>Open your web browser and navigate to the portal URL provided by your administrator.</li>
+      <li>On the login screen, enter your <strong>email address</strong> and <strong>password</strong>.</li>
+      <li>Click <strong>Sign In</strong>. The system will automatically redirect you to the correct portal based on your role.</li>
+      <li>If you have forgotten your password, click <strong>"Forgot password?"</strong> and follow the email reset link.</li>
+    </ol>
+    <div class="tip">New client accounts can be created from the login screen using the <strong>Sign Up</strong> link. Staff accounts must be created by an Admin.</div>
+
+    <h4>2.2 Staff Navigation Overview</h4>
+    <p>
+      After logging in as Staff or Admin, you will see the <strong>sidebar navigation</strong> on the left.
+      It is organised into the following groups:
+    </p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Group</th><th>Menu Items</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Overview</strong></td><td>Dashboard</td></tr>
+        <tr><td><strong>Sales</strong></td><td>Quotes, Invoices, Orders</td></tr>
+        <tr><td><strong>Management</strong></td><td>Clients, Inventory, Products</td></tr>
+        <tr><td><strong>Production</strong></td><td>Raw Materials, Recipes, Batches, Calculator</td></tr>
+        <tr><td><strong>Finance</strong></td><td>Accounts &amp; Expenses, Reports</td></tr>
+        <tr><td><strong>System</strong></td><td>Settings (Admin only)</td></tr>
+      </tbody>
+    </table>
+
+    <h4>2.3 Client Navigation Overview</h4>
+    <p>Clients see a simplified menu with access only to their own data:</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Menu Item</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dashboard</strong></td><td>Summary of recent activity</td></tr>
+        <tr><td><strong>My Orders</strong></td><td>View and track all orders placed</td></tr>
+        <tr><td><strong>My Invoices</strong></td><td>View and download invoices</td></tr>
+        <tr><td><strong>Reports</strong></td><td>Spending &amp; order history charts</td></tr>
+        <tr><td><strong>Settings</strong></td><td>Update profile and change password</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="pg-num">Page <span>3</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 4 — PART B: STAFF PORTAL — DASHBOARD & QUOTES
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="staff-dashboard">
+  <div class="content">
+
+    <h2>Part B — Staff Portal Manual</h2>
+
+    <h3>3. Dashboard</h3>
+    <p>
+      The <strong>Dashboard</strong> is the first screen you see after logging in as Staff or Admin.
+      It gives a real-time snapshot of the business at a glance.
+    </p>
+
+    <h4>Summary Cards (top row)</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Card</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Total Revenue</strong></td><td>Sum of all paid invoices to date</td></tr>
+        <tr><td><strong>Active Orders</strong></td><td>Orders currently in progress (pending/processing/ready)</td></tr>
+        <tr><td><strong>Outstanding Invoices</strong></td><td>Total value of unpaid invoices</td></tr>
+        <tr><td><strong>Total Clients</strong></td><td>Number of registered client accounts</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Charts &amp; Lists</h4>
+    <ul>
+      <li><strong>Revenue chart</strong> — Monthly revenue bar chart for the past 12 months.</li>
+      <li><strong>Recent Orders</strong> — The 5 most recently updated orders with status badges.</li>
+      <li><strong>Recent Invoices</strong> — The 5 latest invoices with amounts and due dates.</li>
+      <li><strong>Top Clients</strong> — Clients ranked by total order value.</li>
+    </ul>
+    <div class="tip">Click any order or invoice row to open its detail view directly from the Dashboard.</div>
+
+    <hr class="sep" />
+
+    <h3>4. Sales — Quotes</h3>
+    <p>
+      The <strong>Quotes</strong> module lets you create formal price quotations for clients before committing to an invoice.
+      Accepted quotes can be converted to invoices with a single click.
+    </p>
+    <p>Navigate to <strong>Sales → Quotes</strong> from the sidebar.</p>
+
+    <h4>Status Chips</h4>
+    <p>The top of the Quotes page has filter chips to view quotes by status:</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Draft</strong></td><td>Created but not yet sent to the client</td></tr>
+        <tr><td><strong>Sent</strong></td><td>Quote has been shared / emailed to the client</td></tr>
+        <tr><td><strong>Accepted</strong></td><td>Client has agreed — ready to convert to invoice</td></tr>
+        <tr><td><strong>Rejected</strong></td><td>Client declined the quote</td></tr>
+        <tr><td><strong>Expired</strong></td><td>The validity date has passed</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Summary Cards</h4>
+    <p>Four cards display: <strong>Total Quotes</strong> | <strong>Accepted Value (GHS)</strong> | <strong>Pending</strong> count | <strong>Conversion Rate %</strong></p>
+
+    <h4>4.1 Creating a Quote</h4>
+    <ol class="steps">
+      <li>Click the <strong>New Quote</strong> button (top-right of the Quotes page).</li>
+      <li>Select the <strong>Client</strong> from the dropdown (all registered clients are listed).</li>
+      <li>Add line items using the <strong>+ Add Item</strong> button. For each item enter:
+        description, quantity, and unit price. The line total updates automatically.</li>
+      <li>Set the <strong>Tax %</strong> (e.g. 15 for VAT), <strong>Valid Until</strong> date, and optional notes.</li>
+      <li>The <strong>Subtotal / Tax / Total</strong> preview updates live at the bottom of the dialog.</li>
+      <li>Click <strong>Create Quote</strong>. A unique quote number (e.g. <code>QT-2026-A3F</code>) is assigned automatically.</li>
+    </ol>
+
+    <h4>4.2 Managing Quotes &amp; Statuses</h4>
+    <ol class="steps">
+      <li>Click the <strong>eye icon</strong> (👁) on any quote row to open the Quote Detail dialog.</li>
+      <li>Inside the detail view, use the <strong>quick action buttons</strong> to update status:
+        <em>Mark Sent, Accept, Reject, Mark Expired</em>.</li>
+      <li>The status change is saved instantly and the quote list refreshes.</li>
+    </ol>
+
+    <h4>4.3 Converting a Quote to Invoice</h4>
+    <ol class="steps">
+      <li>Open an <strong>Accepted</strong> quote's detail view.</li>
+      <li>Click the <strong>Convert to Invoice</strong> button.</li>
+      <li>The system creates a new invoice with all line items copied from the quote.
+        The quote status is automatically updated to <strong>Accepted</strong> and linked.</li>
+      <li>You are redirected to the Invoices page where the new invoice appears with <em>Draft</em> status, ready to edit and send.</li>
+    </ol>
+    <div class="warn">A quote can only be converted once. The button disappears after conversion to prevent duplicates.</div>
+
+  </div>
+  <div class="pg-num">Page <span>4</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 5 — INVOICES & ORDERS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="invoices-orders">
+  <div class="content">
+
+    <h3>5. Sales — Invoices &amp; Orders</h3>
+
+    <h4>5.1 Creating an Invoice</h4>
+    <p>Navigate to <strong>Sales → Invoices</strong>. Invoices are the primary billing documents sent to clients.</p>
+    <ol class="steps">
+      <li>Click <strong>New Invoice</strong> (top-right).</li>
+      <li>Select the <strong>Client</strong> from the dropdown. Their contact details are auto-filled.</li>
+      <li>Set the <strong>Issue Date</strong> and <strong>Due Date</strong>.</li>
+      <li>Add line items: description, quantity, unit price. Tax % can be set per invoice.</li>
+      <li>Add <strong>Notes</strong> (optional) — these appear on the printed invoice.</li>
+      <li>Click <strong>Create Invoice</strong>. A unique invoice number (e.g. <code>INV-2026-001</code>) is auto-generated.</li>
+    </ol>
+
+    <h4>Invoice Statuses</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Status</th><th>Meaning</th><th>Next Action</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Draft</strong></td><td>Created, not yet sent</td><td>Review and mark as Sent</td></tr>
+        <tr><td><strong>Sent</strong></td><td>Delivered to client</td><td>Await payment</td></tr>
+        <tr><td><strong>Paid</strong></td><td>Full payment received</td><td>Archive / no action needed</td></tr>
+        <tr><td><strong>Overdue</strong></td><td>Past due date, unpaid</td><td>Follow up with client</td></tr>
+        <tr><td><strong>Cancelled</strong></td><td>Voided / cancelled</td><td>No further action</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Invoice Detail View</h4>
+    <p>Click the <strong>eye icon</strong> on any invoice row to open the full detail panel. From here you can:</p>
+    <ul>
+      <li>Change the invoice status using the <strong>Status</strong> dropdown</li>
+      <li>View a full itemised breakdown with tax calculation</li>
+      <li>Download/print the invoice as PDF using the <strong>Download</strong> button</li>
+      <li>See which client the invoice belongs to with their contact info</li>
+    </ul>
+    <div class="tip">Paid invoices feed directly into the <strong>Revenue</strong> figures on the Dashboard and Reports pages.</div>
+
+    <hr class="sep" />
+
+    <h4>5.2 Managing Orders</h4>
+    <p>Navigate to <strong>Sales → Orders</strong>. Orders track the fulfilment lifecycle of each client request.</p>
+
+    <h4>Order Statuses</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Pending</strong></td><td>Order received, not yet started</td></tr>
+        <tr><td><strong>Processing</strong></td><td>Being prepared / in production</td></tr>
+        <tr><td><strong>Ready</strong></td><td>Prepared and awaiting collection or delivery</td></tr>
+        <tr><td><strong>Delivered</strong></td><td>Handed over to the client</td></tr>
+        <tr><td><strong>Cancelled</strong></td><td>Order was cancelled</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Creating an Order</h4>
+    <ol class="steps">
+      <li>Click <strong>New Order</strong> and select the client.</li>
+      <li>Choose the linked <strong>Invoice</strong> (optional — orders can exist without an invoice).</li>
+      <li>Add order items: product name, quantity, unit price.</li>
+      <li>Set the <strong>Delivery Date</strong> and any special <strong>Notes</strong>.</li>
+      <li>Click <strong>Create Order</strong>. The order appears with <em>Pending</em> status.</li>
+    </ol>
+
+    <h4>Updating Order Status</h4>
+    <ol class="steps">
+      <li>Click the <strong>edit icon</strong> on an order row.</li>
+      <li>Change the <strong>Status</strong> using the dropdown (Pending → Processing → Ready → Delivered).</li>
+      <li>Click <strong>Save</strong>. The Dashboard and Reports update immediately.</li>
+    </ol>
+    <div class="note">Clients can view their own order statuses in the Client Portal and will see updates in real time.</div>
+
+    <hr class="sep" />
+
+    <h3>6. Client Management</h3>
+    <p>Navigate to <strong>Management → Clients</strong>.</p>
+    <p>The Clients page lists all registered client accounts. Each row shows: name, email, phone, total orders, total spend, and join date.</p>
+
+    <h4>Client Actions</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Action</th><th>How</th></tr></thead>
+      <tbody>
+        <tr><td><strong>View Profile</strong></td><td>Click the eye icon to see full client details, order history, and outstanding invoices</td></tr>
+        <tr><td><strong>Edit Details</strong></td><td>Click the edit (pencil) icon to update name, email, phone, or address</td></tr>
+        <tr><td><strong>Search</strong></td><td>Use the search bar to filter by name or email</td></tr>
+        <tr><td><strong>Sort</strong></td><td>Click any column header to sort the list</td></tr>
+      </tbody>
+    </table>
+    <div class="info">Client accounts are created when the user self-registers via the Sign Up page. Staff cannot create client accounts directly — they can only edit existing profiles.</div>
+
+  </div>
+  <div class="pg-num">Page <span>5</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 6 — INVENTORY & PRODUCTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="inventory-products">
+  <div class="content">
+
+    <h3>7. Inventory &amp; Products</h3>
+
+    <h4>7.1 Managing Raw Materials</h4>
+    <p>Navigate to <strong>Management → Inventory</strong>. Raw materials are the input ingredients and supplies used in production.</p>
+
+    <h4>Inventory Table Columns</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Column</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Material Name</strong></td><td>Descriptive name (e.g. "Shea Butter", "Citric Acid")</td></tr>
+        <tr><td><strong>Unit</strong></td><td>Unit of measure: kg, g, L, ml, pcs, etc.</td></tr>
+        <tr><td><strong>Stock Qty</strong></td><td>Current quantity on hand</td></tr>
+        <tr><td><strong>Reorder Level</strong></td><td>Minimum quantity before a reorder alert is triggered</td></tr>
+        <tr><td><strong>Cost per Unit</strong></td><td>Purchase price per unit (GHS)</td></tr>
+        <tr><td><strong>Supplier</strong></td><td>Name of the supplier (optional)</td></tr>
+        <tr><td><strong>Status</strong></td><td>In Stock / Low Stock / Out of Stock (colour coded)</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Adding a Raw Material</h4>
+    <ol class="steps">
+      <li>Click <strong>Add Material</strong>.</li>
+      <li>Fill in: name, unit, current stock quantity, reorder level, cost per unit, and supplier.</li>
+      <li>Click <strong>Save</strong>. The material is immediately available for use in Recipes and the Production Calculator.</li>
+    </ol>
+
+    <h4>Stock Alerts</h4>
+    <p>Materials whose <em>Stock Qty</em> falls at or below their <em>Reorder Level</em> are highlighted in <strong style="color:#d97706;">amber</strong>. Materials with zero stock show in <strong style="color:#dc2626;">red</strong>.</p>
+    <div class="warn">Always update stock quantities after receiving a delivery or completing a production batch to keep the system accurate.</div>
+
+    <hr class="sep" />
+
+    <h4>7.2 Managing Products</h4>
+    <p>Navigate to <strong>Management → Products</strong>. Products are the finished goods you sell to clients.</p>
+
+    <h4>Product Fields</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Product Name</strong></td><td>Name shown on invoices and orders</td></tr>
+        <tr><td><strong>Category</strong></td><td>Product category (e.g. skincare, haircare, candles)</td></tr>
+        <tr><td><strong>Unit Price</strong></td><td>Default selling price (GHS). Can be overridden per invoice line</td></tr>
+        <tr><td><strong>Description</strong></td><td>Brief product description shown to clients</td></tr>
+        <tr><td><strong>Is Active</strong></td><td>Toggle to hide discontinued products from selection lists</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Adding a Product</h4>
+    <ol class="steps">
+      <li>Click <strong>Add Product</strong>.</li>
+      <li>Enter the product name, category, unit price, and description.</li>
+      <li>Click <strong>Save</strong>. The product is now available when creating invoices and orders.</li>
+    </ol>
+
+    <hr class="sep" />
+
+    <h3>8. Production Module</h3>
+    <p>
+      The <strong>Production</strong> section manages the full manufacturing workflow —
+      from raw material tracking through recipes and batch production to cost calculations.
+      Navigate via the <strong>Production</strong> group in the sidebar.
+    </p>
+
+    <h4>8.1 Raw Materials (Production View)</h4>
+    <p>
+      Navigate to <strong>Production → Raw Materials</strong>. This is the same data as the Inventory page
+      but presented with a production focus — showing material costs and stock levels
+      relevant to recipe planning.
+    </p>
+    <ul>
+      <li>Use the <strong>Adjust Stock</strong> button to log receipts or write-offs without creating a full order.</li>
+      <li>The <strong>Cost per Unit</strong> here feeds directly into recipe cost calculations.</li>
+    </ul>
+
+  </div>
+  <div class="pg-num">Page <span>6</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 7 — PRODUCTION: RECIPES, BATCHES & CALCULATOR
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="production">
+  <div class="content">
+
+    <h4>8.2 Recipes</h4>
+    <p>Navigate to <strong>Production → Recipes</strong>. A recipe defines the exact raw material ingredients — and their quantities — needed to produce one unit of a finished product.</p>
+
+    <h4>Creating a Recipe</h4>
+    <ol class="steps">
+      <li>Click <strong>New Recipe</strong>.</li>
+      <li>Enter the <strong>Recipe Name</strong> and select the <strong>Target Product</strong> it produces.</li>
+      <li>Set the <strong>Batch Yield</strong> (how many units one full batch produces).</li>
+      <li>Click <strong>Add Ingredient</strong>. For each ingredient, select the raw material and enter the quantity needed per batch.</li>
+      <li>The system calculates the <strong>cost per ingredient line</strong> and the <strong>total batch cost</strong> automatically.</li>
+      <li>Add <strong>Preparation Notes</strong> (optional steps or instructions) and click <strong>Save Recipe</strong>.</li>
+    </ol>
+
+    <h4>Recipe Cost Breakdown</h4>
+    <p>Each recipe card displays a real-time cost summary:</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Figure</th><th>How it's calculated</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Total Ingredient Cost</strong></td><td>Sum of (ingredient qty × cost per unit) for all ingredients</td></tr>
+        <tr><td><strong>Cost per Unit</strong></td><td>Total Ingredient Cost ÷ Batch Yield</td></tr>
+        <tr><td><strong>Overhead %</strong></td><td>Applied from Settings defaults (utilities, labour, packaging, equipment)</td></tr>
+        <tr><td><strong>Full Cost per Unit</strong></td><td>Cost per Unit × (1 + total overhead %)</td></tr>
+      </tbody>
+    </table>
+
+    <hr class="sep" />
+
+    <h4>8.3 Batch Management</h4>
+    <p>Navigate to <strong>Production → Batches</strong>. A batch is a recorded production run using a specific recipe.</p>
+
+    <h4>Creating a Batch</h4>
+    <ol class="steps">
+      <li>Click <strong>New Batch</strong>.</li>
+      <li>Select the <strong>Recipe</strong> to use.</li>
+      <li>Enter the <strong>Number of Batches</strong> you are producing (e.g. 3 means 3× the recipe quantities).</li>
+      <li>Set the <strong>Production Date</strong>.</li>
+      <li>The system checks current stock levels. If any material is insufficient, a <strong style="color:#dc2626;">shortfall warning</strong> appears.</li>
+      <li>If stock is sufficient, click <strong>Confirm Batch</strong>. Raw material stock levels are automatically deducted.</li>
+    </ol>
+    <div class="warn">Confirming a batch permanently deducts raw material stock. Double-check quantities before confirming.</div>
+
+    <h4>Batch History</h4>
+    <p>All completed batches are listed in a table showing: recipe name, batches produced, units yielded, total cost, and production date. Use this to track production output over time.</p>
+
+    <hr class="sep" />
+
+    <h4>8.4 Production Calculator</h4>
+    <p>Navigate to <strong>Production → Calculator</strong>. The Calculator is a standalone pricing and profitability tool — it does not require a saved recipe.</p>
+
+    <h4>How to use the Calculator</h4>
+    <ol class="steps">
+      <li><strong>Select a Recipe</strong> (optional) — auto-fills ingredient costs, or enter manually.</li>
+      <li>Add ingredients manually if needed: name, quantity, cost per unit. The <strong>Base Ingredient Cost</strong> totals automatically.</li>
+      <li>Open the <strong>Tax &amp; Overhead Rates</strong> panel (click the arrow to expand). Rates are pre-filled from your Settings defaults but can be overridden for this session.</li>
+      <li>Review the <strong>Cost Breakdown</strong>: Base Cost → Utilities → Labour → Packaging → Equipment Dep → <strong>Full Cost per Unit</strong>.</li>
+      <li>Enter a <strong>Markup %</strong>. The <strong>Selling Price</strong> is calculated as: Full Cost per Unit × (1 + Markup %).</li>
+      <li>The <strong>Final Price strip</strong> shows VAT, NHIL, and GETFUND added on top of the selling price.</li>
+      <li>Review the <strong>Price Sensitivity Table</strong> — shows profit and final prices at markup levels from 10% to 100%.</li>
+      <li>Use the <strong>Material Requirements Planner</strong> to compare needed quantities vs. current stock, with procurement cost estimates for shortfalls.</li>
+    </ol>
+
+    <h4>Tax &amp; Overhead Rate Defaults (Ghana Cosmetics Industry)</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Rate</th><th>Default</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td>Utilities</td><td>4%</td><td>Production overhead (added to cost)</td></tr>
+        <tr><td>Labour</td><td>22%</td><td>Production overhead (added to cost)</td></tr>
+        <tr><td>Packaging</td><td>12%</td><td>Production overhead (added to cost)</td></tr>
+        <tr><td>Equipment Depreciation</td><td>3%</td><td>Production overhead (added to cost)</td></tr>
+        <tr><td>VAT</td><td>15%</td><td>Statutory tax (added to sell price)</td></tr>
+        <tr><td>NHIL</td><td>2.5%</td><td>Statutory tax (added to sell price)</td></tr>
+        <tr><td>GETFUND</td><td>2.5%</td><td>Statutory tax (added to sell price)</td></tr>
+      </tbody>
+    </table>
+    <div class="tip">Change the defaults for your business in <strong>Settings → Business Defaults → Production Taxes &amp; Overheads</strong>. The Calculator will use your saved values on every session.</div>
+
+  </div>
+  <div class="pg-num">Page <span>7</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 8 — FINANCE: ACCOUNTS, EXPENSES & P&L
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="finance-accounts">
+  <div class="content">
+
+    <h3>9. Finance — Accounts &amp; Expenses</h3>
+    <p>Navigate to <strong>Finance → Accounts &amp; Expenses</strong>. This is the central finance hub covering payment accounts, the expense ledger, and profit &amp; loss summary.</p>
+
+    <h4>9.1 Payment Accounts</h4>
+    <p>Payment accounts represent the physical and digital accounts your business uses to receive and spend money (cash, bank, mobile money, card).</p>
+
+    <h4>Account Type Icons</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Type</th><th>Icon colour</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cash</strong></td><td>Green</td><td>Cash on Hand, Petty Cash</td></tr>
+        <tr><td><strong>Bank</strong></td><td>Blue</td><td>Ecobank, GCB, Fidelity</td></tr>
+        <tr><td><strong>Mobile Money</strong></td><td>Yellow</td><td>MTN MoMo, Vodafone Cash, AirtelTigo</td></tr>
+        <tr><td><strong>Card</strong></td><td>Purple</td><td>Visa Debit, Corporate Card</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Adding an Account</h4>
+    <ol class="steps">
+      <li>Click <strong>Add Account</strong>.</li>
+      <li>Enter a name (e.g. "MTN MoMo"), select the type, set the opening balance, and add optional notes.</li>
+      <li>Click <strong>Save</strong>. The account card appears in the accounts strip at the top.</li>
+    </ol>
+
+    <h4>Editing a Balance</h4>
+    <p>Click the <strong>edit icon</strong> on any account card to manually correct the balance. This is useful when reconciling with a bank statement.</p>
+    <div class="warn">Balances are maintained manually — the system does not auto-deduct when expenses are recorded against an account. Always reconcile balances periodically.</div>
+
+    <hr class="sep" />
+
+    <h4>9.2 Expense Ledger</h4>
+    <p>The expense ledger records every business expenditure. Use it to track where money is going and by category.</p>
+
+    <h4>Expense Categories</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Category</th><th>Typical Use</th></tr></thead>
+      <tbody>
+        <tr><td>Materials</td><td>Raw material purchases</td></tr>
+        <tr><td>Labour</td><td>Staff wages and contractor fees</td></tr>
+        <tr><td>Utilities</td><td>Electricity, water, internet</td></tr>
+        <tr><td>Rent</td><td>Office, workshop, or storage rent</td></tr>
+        <tr><td>Marketing</td><td>Social media ads, flyers, promotions</td></tr>
+        <tr><td>Packaging</td><td>Bottles, labels, bags, boxes</td></tr>
+        <tr><td>Equipment</td><td>Purchases or repairs of machinery/tools</td></tr>
+        <tr><td>Misc</td><td>Any expense not fitting above categories</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Adding an Expense</h4>
+    <ol class="steps">
+      <li>Click <strong>Add Expense</strong>.</li>
+      <li>Select the <strong>Category</strong>, enter a <strong>Description</strong>, <strong>Amount (GHS)</strong>, and <strong>Date</strong>.</li>
+      <li>Choose the <strong>Account</strong> the expense was paid from (optional).</li>
+      <li>Enter a <strong>Receipt Reference</strong> number for record-keeping (optional).</li>
+      <li>Click <strong>Save Expense</strong>. The entry appears immediately in the ledger and updates the P&amp;L.</li>
+    </ol>
+
+    <hr class="sep" />
+
+    <h4>9.3 Profit &amp; Loss Summary</h4>
+    <p>The P&amp;L panel (middle of the Accounts page) provides a snapshot comparison of revenue vs. expenses for a chosen period.</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Period Option</th><th>Date range</th></tr></thead>
+      <tbody>
+        <tr><td>This Month</td><td>1st of current month to today</td></tr>
+        <tr><td>This Quarter</td><td>First day of current quarter to today</td></tr>
+        <tr><td>This Year</td><td>1 January to today</td></tr>
+      </tbody>
+    </table>
+    <p>The three summary cards show:</p>
+    <ul>
+      <li><strong>Revenue</strong> — Total from paid invoices in the period</li>
+      <li><strong>Expenses</strong> — Total from the expense ledger in the period</li>
+      <li><strong>Net Profit</strong> — Revenue minus Expenses, with the profit margin % shown below</li>
+    </ul>
+    <p>Below the cards, a <strong>6-month bar chart</strong> compares Revenue vs. Expenses month by month. The <strong>Category Breakdown pie chart</strong> shows what proportion of expenses falls into each category.</p>
+    <div class="tip">For accurate P&amp;L figures, ensure all paid invoices have been marked as <strong>Paid</strong> in the Invoices module and all business expenses are logged in the Expense Ledger.</div>
+
+  </div>
+  <div class="pg-num">Page <span>8</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 9 — REPORTS & EXPORTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="reports">
+  <div class="content">
+
+    <h3>10. Reports &amp; Exports</h3>
+    <p>Navigate to <strong>Finance → Reports</strong>. The Reports page gives a comprehensive view of business performance, with flexible date filtering and export functionality.</p>
+
+    <h4>10.1 Date Filters &amp; Period Comparison</h4>
+    <p>Use the <strong>period selector</strong> (top of the Reports page) to filter all data:</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Option</th><th>Date Range</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Last 7 Days</strong></td><td>Rolling 7-day window</td></tr>
+        <tr><td><strong>Last 30 Days</strong></td><td>Rolling 30-day window</td></tr>
+        <tr><td><strong>Last 90 Days</strong></td><td>Rolling 90-day window</td></tr>
+        <tr><td><strong>Last 12 Months</strong></td><td>Full year rolling window</td></tr>
+        <tr><td><strong>Custom</strong></td><td>Pick a From and To date manually</td></tr>
+      </tbody>
+    </table>
+    <p>When <strong>Custom</strong> is selected, two date pickers appear. All charts, cards, and tables update to reflect the selected period.</p>
+    <p>Each <strong>stat card</strong> also shows a <em>period-over-period comparison</em> (e.g. vs. previous 30 days) with a green up or red down arrow indicating the trend.</p>
+
+    <h4>Report Sections</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Section</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Stat Cards</strong></td><td>Revenue, Orders, Outstanding, New Clients — all with trend deltas</td></tr>
+        <tr><td><strong>Tax Collected</strong></td><td>Total tax amount from paid invoices in the period</td></tr>
+        <tr><td><strong>Revenue &amp; Orders Chart</strong></td><td>Dual-axis bar (revenue) + line (orders) over 12 months</td></tr>
+        <tr><td><strong>Monthly Breakdown Table</strong></td><td>Month | Orders | Cancelled | Revenue | Avg Order | Tax Collected | Net Revenue</td></tr>
+        <tr><td><strong>Invoice Aging</strong></td><td>Outstanding invoices bucketed: 0–30 / 31–60 / 61–90 / 90+ days with coloured progress bars</td></tr>
+        <tr><td><strong>Invoice Status Pie</strong></td><td>Distribution of Paid / Sent / Draft / Overdue / Cancelled</td></tr>
+        <tr><td><strong>Top 10 Clients</strong></td><td>Ranked by revenue with % share bars</td></tr>
+        <tr><td><strong>Top 10 Products</strong></td><td>Ranked by revenue with % share bars</td></tr>
+      </tbody>
+    </table>
+
+    <hr class="sep" />
+
+    <h4>10.2 Exporting Reports (PDF / CSV / Excel)</h4>
+    <p>Three export buttons appear at the top-right of the Reports page:</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Button</th><th>Format</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PDF</strong></td><td>Landscape A4 PDF</td><td>All report tables: Summary, Monthly Breakdown, Top Clients, Top Products — with branded green header rows</td></tr>
+        <tr><td><strong>CSV</strong></td><td>Comma-separated file</td><td>Monthly breakdown table (opens in Excel, Numbers, or Google Sheets)</td></tr>
+        <tr><td><strong>Excel</strong></td><td>.xlsx workbook</td><td>4 sheets: Summary, Monthly, Clients, Products — with bold headers</td></tr>
+      </tbody>
+    </table>
+    <div class="tip">Always select your date range <em>before</em> clicking an export button — the export captures exactly what is currently visible on screen.</div>
+
+    <h4>Saving the Excel File</h4>
+    <ol class="steps">
+      <li>Click the <strong>Excel</strong> button. The browser downloads a file named e.g. <code>eltuff-report-2026-02.xlsx</code>.</li>
+      <li>Open it in Microsoft Excel or Google Sheets.</li>
+      <li>Each tab (Summary, Monthly, Clients, Products) has bold column headers and is ready to print or share.</li>
+    </ol>
+
+    <h4>Saving as PDF</h4>
+    <ol class="steps">
+      <li>Click the <strong>PDF</strong> button. A landscape PDF downloads automatically.</li>
+      <li>The PDF includes a branded title line with the report date range and all tables formatted with teal header rows.</li>
+      <li>Share directly with management, accountants, or stakeholders.</li>
+    </ol>
+    <div class="note">PDF exports are generated entirely in the browser — no internet connection is required after the page loads.</div>
+
+  </div>
+  <div class="pg-num">Page <span>9</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 10 — SETTINGS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="settings">
+  <div class="content">
+
+    <h3>11. Settings <span class="badge b-admin">ADMIN ONLY</span></h3>
+    <p>Navigate to <strong>System → Settings</strong>. Only users with the <strong>Admin</strong> role can access this page. It is organised into three tabs: <em>Company Profile</em>, <em>Business Defaults</em>, and <em>Staff Accounts</em>.</p>
+
+    <h4>11.1 Company Profile Tab</h4>
+    <p>Sets the information that appears on printed invoices, quotes, and PDF exports.</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Company Name</strong></td><td>Your registered business name (e.g. Eltuff Ideas Ventures)</td></tr>
+        <tr><td><strong>Email</strong></td><td>Primary contact email shown on invoices</td></tr>
+        <tr><td><strong>Phone</strong></td><td>Business phone number</td></tr>
+        <tr><td><strong>Address</strong></td><td>Physical business address</td></tr>
+        <tr><td><strong>Currency</strong></td><td>Default currency symbol (default: GHS)</td></tr>
+        <tr><td><strong>Invoice Prefix</strong></td><td>Prefix for auto-generated invoice numbers (e.g. <code>INV</code>)</td></tr>
+        <tr><td><strong>Quote Prefix</strong></td><td>Prefix for auto-generated quote numbers (e.g. <code>QT</code>)</td></tr>
+        <tr><td><strong>Default Payment Terms</strong></td><td>Days until invoice is due (e.g. 30)</td></tr>
+        <tr><td><strong>Invoice Notes</strong></td><td>Standard footer text printed on every invoice</td></tr>
+      </tbody>
+    </table>
+    <p>Click <strong>Save Company Settings</strong> to apply. Changes take effect immediately on all new documents.</p>
+
+    <hr class="sep" />
+
+    <h4>11.2 Business Defaults Tab</h4>
+    <p>Stores default rates used by the Production Calculator and throughout the system. Changes here update defaults for all staff — individual sessions can still override them.</p>
+
+    <p><strong>General Defaults</strong></p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Field</th><th>Default</th><th>Used in</th></tr></thead>
+      <tbody>
+        <tr><td>Default Tax Rate %</td><td>15%</td><td>Invoice &amp; Quote tax field</td></tr>
+        <tr><td>Default Markup %</td><td>40%</td><td>Production Calculator starting markup</td></tr>
+        <tr><td>Default Overhead %</td><td>20%</td><td>Recipe cost overhead loading</td></tr>
+        <tr><td>Low Stock Threshold</td><td>10 units</td><td>Inventory stock alert trigger</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Production Taxes &amp; Overheads</strong> — Ghana Cosmetics / Personal-Care Industry Defaults</p>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Field</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>VAT %</td><td>15%</td><td>Ghana standard Value Added Tax</td></tr>
+        <tr><td>NHIL %</td><td>2.5%</td><td>National Health Insurance Levy</td></tr>
+        <tr><td>GETFUND %</td><td>2.5%</td><td>Ghana Education Trust Fund levy</td></tr>
+        <tr><td>Utilities %</td><td>4%</td><td>% of base cost allocated to electricity &amp; water</td></tr>
+        <tr><td>Labour %</td><td>22%</td><td>% of base cost allocated to direct labour</td></tr>
+        <tr><td>Packaging %</td><td>12%</td><td>% of base cost allocated to packaging materials</td></tr>
+        <tr><td>Equipment Dep %</td><td>3%</td><td>% of base cost for equipment depreciation</td></tr>
+      </tbody>
+    </table>
+    <p>The <strong>live preview strip</strong> at the bottom of this section shows your total overhead load and total statutory tax rate as you edit the fields.</p>
+    <p>Click <strong>Reset to Industry Defaults</strong> to restore all seven fields to the Ghana cosmetics industry values shown above. Click <strong>Save Business Defaults</strong> to apply your customised values.</p>
+    <div class="tip">VAT, NHIL, and GETFUND are <em>added on top of</em> the selling price. Utilities, Labour, Packaging, and Equipment Depreciation are <em>added to</em> the ingredient cost to arrive at the Full Cost per Unit.</div>
+
+    <hr class="sep" />
+
+    <h4>11.3 Staff Accounts Tab <span class="badge b-admin">ADMIN ONLY</span></h4>
+    <p>Manage who has access to the Staff Portal and what role they hold.</p>
+
+    <h4>Promoting a User to Staff</h4>
+    <ol class="steps">
+      <li>The user must first <strong>register themselves</strong> via the Sign Up page. They will be assigned the <em>Client</em> role by default.</li>
+      <li>In the Staff Accounts tab, locate the user by name or email.</li>
+      <li>Click the <strong>role dropdown</strong> next to their name and select <strong>Staff</strong> or <strong>Admin</strong>.</li>
+      <li>Click <strong>Save</strong>. The user's portal access updates immediately — they will see the Staff Portal on their next login.</li>
+    </ol>
+
+    <h4>Removing Staff Access</h4>
+    <ol class="steps">
+      <li>Locate the staff member in the Staff Accounts tab.</li>
+      <li>Change their role to <strong>Client</strong> using the role dropdown.</li>
+      <li>Click <strong>Save</strong>. They lose access to the Staff Portal immediately.</li>
+    </ol>
+    <div class="warn">There must always be at least one Admin account. Do not demote the last Admin — you will lose the ability to manage roles.</div>
+
+  </div>
+  <div class="pg-num">Page <span>10</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 11 — PART C: CLIENT PORTAL
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="client-portal">
+  <div class="content">
+
+    <h2>Part C — Client Portal Manual</h2>
+
+    <h3>12. Client Dashboard</h3>
+    <p>
+      After logging in as a <strong>Client</strong>, you land on the <strong>Client Dashboard</strong>.
+      It gives a personal snapshot of your activity with Eltuff Ideas Ventures.
+    </p>
+
+    <h4>Dashboard Cards</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Card</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Total Orders</strong></td><td>Total number of orders you have placed</td></tr>
+        <tr><td><strong>Active Orders</strong></td><td>Orders currently being processed or ready for collection</td></tr>
+        <tr><td><strong>Total Spent</strong></td><td>Cumulative amount on paid invoices (GHS)</td></tr>
+        <tr><td><strong>Outstanding Balance</strong></td><td>Total value of unpaid invoices</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Recent Activity</h4>
+    <ul>
+      <li><strong>Recent Orders</strong> — Your 5 most recent orders with current status badges.</li>
+      <li><strong>Recent Invoices</strong> — Your 5 latest invoices with amounts and due dates.</li>
+    </ul>
+    <div class="tip">Click any order or invoice row on the Dashboard to jump straight to its detail view.</div>
+
+    <hr class="sep" />
+
+    <h3>13. My Orders &amp; Invoices</h3>
+
+    <h4>My Orders</h4>
+    <p>Navigate to <strong>My Orders</strong> from the sidebar. This page shows all orders placed under your account.</p>
+    <ul>
+      <li>Each row shows: order number, date, item summary, total amount, and current status.</li>
+      <li>Click the <strong>eye icon</strong> to view the full order breakdown including individual line items.</li>
+      <li>Use the <strong>status filter chips</strong> (All / Pending / Processing / Ready / Delivered / Cancelled) to narrow the list.</li>
+      <li>Use the <strong>search bar</strong> to find a specific order by number or product name.</li>
+    </ul>
+
+    <h4>Order Status Meanings</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Status</th><th>What it means for you</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Pending</strong></td><td>Order received — the team will begin processing soon</td></tr>
+        <tr><td><strong>Processing</strong></td><td>Your order is being prepared</td></tr>
+        <tr><td><strong>Ready</strong></td><td>Your order is ready for collection or dispatch</td></tr>
+        <tr><td><strong>Delivered</strong></td><td>Order has been handed over — complete</td></tr>
+        <tr><td><strong>Cancelled</strong></td><td>Order was cancelled — contact staff if this is unexpected</td></tr>
+      </tbody>
+    </table>
+
+    <hr class="sep" />
+
+    <h4>My Invoices</h4>
+    <p>Navigate to <strong>My Invoices</strong> from the sidebar. All invoices issued to your account are listed here.</p>
+    <ul>
+      <li>Each row shows: invoice number, date, due date, amount, and payment status.</li>
+      <li>Click the <strong>eye icon</strong> to view the full invoice with itemised breakdown and tax.</li>
+      <li>Click <strong>Download PDF</strong> inside the detail view to save or print the invoice.</li>
+      <li>Filter by status: <em>All / Draft / Sent / Paid / Overdue / Cancelled</em>.</li>
+    </ul>
+    <div class="note">You cannot edit invoices. If you believe an invoice contains an error, contact your account manager at Eltuff Ideas Ventures directly.</div>
+
+    <hr class="sep" />
+
+    <h3>14. Client Reports</h3>
+    <p>Navigate to <strong>Reports</strong> from the sidebar. The client reports page shows your personal spending and order history.</p>
+
+    <h4>Available Charts &amp; Tables</h4>
+    <table style="font-size:8pt;">
+      <thead><tr><th>Report</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Monthly Spending</strong></td><td>Bar chart of your invoice totals by month over the past 12 months</td></tr>
+        <tr><td><strong>Order History Table</strong></td><td>All orders with dates, amounts, and statuses — sortable by any column</td></tr>
+        <tr><td><strong>Invoice Summary</strong></td><td>Paid vs outstanding totals</td></tr>
+      </tbody>
+    </table>
+    <p>Use the <strong>date range selector</strong> to focus on a specific time period.</p>
+
+    <hr class="sep" />
+
+    <h3>15. Account Settings</h3>
+    <p>Navigate to <strong>Settings</strong> from the sidebar to manage your personal account details.</p>
+
+    <h4>Profile Information</h4>
+    <ul>
+      <li>Update your <strong>full name</strong>, <strong>phone number</strong>, and <strong>delivery address</strong>.</li>
+      <li>Click <strong>Save Changes</strong> to apply.</li>
+    </ul>
+
+    <h4>Change Password</h4>
+    <ol class="steps">
+      <li>Enter your <strong>current password</strong>.</li>
+      <li>Enter your <strong>new password</strong> (minimum 8 characters).</li>
+      <li>Confirm the new password and click <strong>Update Password</strong>.</li>
+      <li>You will be signed out and prompted to log in with the new password.</li>
+    </ol>
+    <div class="warn">If you forget your password, use the <strong>Forgot Password</strong> link on the login screen. Do not share your password with anyone.</div>
+
+  </div>
+  <div class="pg-num">Page <span>11</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 12 — APPENDIX A: PERMISSIONS MATRIX
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="appendix-permissions">
+  <div class="content">
+
+    <h2>Appendix</h2>
+
+    <h3>A. Full Role Permissions Matrix</h3>
+    <p>The table below summarises what each role can do across every module. <span class="yes">✔</span> = Full access &nbsp; <span class="part">◑</span> = Partial/read-only &nbsp; <span class="no">✘</span> = No access.</p>
+
+    <table class="alt" style="font-size:7.8pt;">
+      <thead>
+        <tr>
+          <th style="width:34%;">Feature / Action</th>
+          <th class="center" style="width:22%;"><span class="badge b-admin">ADMIN</span></th>
+          <th class="center" style="width:22%;"><span class="badge b-staff">STAFF</span></th>
+          <th class="center" style="width:22%;"><span class="badge b-client">CLIENT</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Dashboard</td></tr>
+        <tr><td>View staff dashboard</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>View client dashboard</td><td class="center no">✘</td><td class="center no">✘</td><td class="center yes">✔</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Quotes</td></tr>
+        <tr><td>View all quotes</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Create / edit quotes</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Convert quote to invoice</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Invoices</td></tr>
+        <tr><td>View all invoices</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>View own invoices</td><td class="center no">✘</td><td class="center no">✘</td><td class="center yes">✔</td></tr>
+        <tr><td>Create / update invoices</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Download invoice PDF</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center yes">✔</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Orders</td></tr>
+        <tr><td>View all orders</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>View own orders</td><td class="center no">✘</td><td class="center no">✘</td><td class="center yes">✔</td></tr>
+        <tr><td>Create / update orders</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Clients</td></tr>
+        <tr><td>View client list</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Edit client profiles</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Inventory &amp; Products</td></tr>
+        <tr><td>View inventory</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Add / edit materials &amp; products</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Production</td></tr>
+        <tr><td>View recipes &amp; batches</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Create / confirm batches</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Use Production Calculator</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Finance</td></tr>
+        <tr><td>View accounts &amp; expenses</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>Add / delete expenses</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center no">✘</td></tr>
+        <tr><td>View reports &amp; export</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center part">◑</td></tr>
+
+        <tr><td colspan="4" style="background:#e8f8f7;font-weight:700;padding:1.5mm 3mm;">Settings</td></tr>
+        <tr><td>Company profile &amp; defaults</td><td class="center yes">✔</td><td class="center no">✘</td><td class="center no">✘</td></tr>
+        <tr><td>Manage staff roles</td><td class="center yes">✔</td><td class="center no">✘</td><td class="center no">✘</td></tr>
+        <tr><td>Edit own profile &amp; password</td><td class="center yes">✔</td><td class="center yes">✔</td><td class="center yes">✔</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="pg-num">Page <span>12</span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 13 — APPENDIX B: FAQ + GLOSSARY + SUPPORT
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="appendix-faq">
+  <div class="content">
+
+    <h3>B. Frequently Asked Questions</h3>
+
+    <h4>I forgot my password. What do I do?</h4>
+    <p>On the login screen, click <strong>Forgot password?</strong> and enter your email address. You will receive a password reset link. The link expires after 1 hour — request a new one if it expires.</p>
+
+    <h4>I can't see the Staff Portal after logging in.</h4>
+    <p>Your account may be set to the <em>Client</em> role. Ask an Admin to promote your account to <strong>Staff</strong> from the Settings → Staff Accounts tab.</p>
+
+    <h4>A raw material stock level is wrong after a batch.</h4>
+    <p>Stock is deducted automatically when a batch is <strong>Confirmed</strong>. If the level is still wrong, an Admin can manually edit the stock quantity from the Inventory page.</p>
+
+    <h4>Can I edit an invoice after it has been sent?</h4>
+    <p>Yes — invoices can be edited at any status except <em>Paid</em>. Open the invoice detail view, click <strong>Edit</strong>, make your changes, and save. The client will see the updated version if they refresh.</p>
+
+    <h4>Why is the Convert to Invoice button missing on a quote?</h4>
+    <p>The button only appears on quotes with <strong>Accepted</strong> status, and disappears after the quote has already been converted once. Change the status to <em>Accepted</em> first if it hasn't been set.</p>
+
+    <h4>How do I change the VAT rate applied to new invoices?</h4>
+    <p>Go to <strong>Settings → Business Defaults</strong> and update the <strong>Default Tax Rate %</strong>. New invoices will pre-fill with this value. Existing invoices are not affected.</p>
+
+    <h4>The Reports page shows no data.</h4>
+    <p>Check the date range selector — it may be set to a period with no activity. Also ensure invoices have been marked as <em>Paid</em> or <em>Sent</em> (Draft invoices are excluded from most report figures).</p>
+
+    <h4>Can a client place orders directly through the portal?</h4>
+    <p>Currently, orders are created by Staff on behalf of clients. The Client Portal is a <em>view and tracking</em> interface. Clients can request orders via phone, email, or WhatsApp and staff enter them into the system.</p>
+
+    <hr class="sep" />
+
+    <h3>C. Glossary</h3>
+    <table style="font-size:8pt;">
+      <thead><tr><th style="width:30%;">Term</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Batch</strong></td><td>A single production run using a recipe, producing a fixed number of units</td></tr>
+        <tr><td><strong>Full Cost per Unit</strong></td><td>Ingredient cost per unit plus all production overheads (utilities, labour, packaging, equipment)</td></tr>
+        <tr><td><strong>GETFUND</strong></td><td>Ghana Education Trust Fund levy — 2.5% statutory tax added to selling price</td></tr>
+        <tr><td><strong>Invoice Aging</strong></td><td>Categorisation of outstanding invoices by how many days they are overdue</td></tr>
+        <tr><td><strong>Markup %</strong></td><td>Percentage added on top of Full Cost per Unit to arrive at the selling price</td></tr>
+        <tr><td><strong>NHIL</strong></td><td>National Health Insurance Levy — 2.5% statutory tax added to selling price</td></tr>
+        <tr><td><strong>P&amp;L</strong></td><td>Profit &amp; Loss — Revenue minus Expenses for a given period</td></tr>
+        <tr><td><strong>Quote</strong></td><td>A formal price offer sent to a client before an invoice is raised</td></tr>
+        <tr><td><strong>RLS</strong></td><td>Row Level Security — database-level rules ensuring each user only sees their own data</td></tr>
+        <tr><td><strong>VAT</strong></td><td>Value Added Tax — 15% statutory tax added to selling price in Ghana</td></tr>
+        <tr><td><strong>Yield</strong></td><td>Number of finished product units produced by one batch of a recipe</td></tr>
+      </tbody>
+    </table>
+
+    <hr class="sep" />
+
+    <h3>D. Support &amp; Contact</h3>
+    <p>For technical support, feature requests, or bug reports related to this portal, contact the development team:</p>
+    <table style="font-size:8.5pt;">
+      <thead><tr><th>Channel</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Developer</strong></td><td>Nexacore Innovations</td></tr>
+        <tr><td><strong>Website</strong></td><td><a href="https://nexacore-innovations.com">nexacore-innovations.com</a></td></tr>
+        <tr><td><strong>Email</strong></td><td><a href="mailto:info@nexacore-innovations.com">info@nexacore-innovations.com</a></td></tr>
+        <tr><td><strong>Phone</strong></td><td>+233-50-1588-710 / +233-20-9628-907</td></tr>
+        <tr><td><strong>Location</strong></td><td>Accra, Ghana</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:3mm;">For day-to-day operational queries (orders, invoices, payments), contact <strong>Eltuff Ideas Ventures</strong> directly using the contact information provided to you at account registration.</p>
+
+    <div class="cover-divider" style="margin:6mm 0 4mm;"></div>
+
+    <p style="text-align:center;font-size:8pt;color:#888;">
+      <strong>Eltuff Ideas Ventures — Staff &amp; Client Portal User Manual</strong><br>
+      Version 1.0 &nbsp;|&nbsp; February 2026<br>
+      Designed &amp; developed by
+      <a href="https://nexacore-innovations.com" style="color:#1aadaa;font-weight:700;">Nexacore Innovations</a>
+      &nbsp;|&nbsp; nexacore-innovations.com
+    </p>
+
+  </div>
+  <div class="pg-num">Page <span>13</span></div>
+</div>
+
+</body>
+</html>
+
+</body>
+</html>

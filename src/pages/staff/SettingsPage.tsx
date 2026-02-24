@@ -16,10 +16,10 @@ interface CompanySettings {
 
 const defaultCompany: CompanySettings = {
   name:     "Eltuff Ideas Ventures",
-  tagline:  "Quality formulations, bulk supply, reliable delivery.",
-  email:    "",
-  phone:    "",
-  address:  "",
+  tagline:  "Ani's Pride Hair & Skin Products",
+  email:    "anisprideglobal@gmail.com",
+  phone:    "055 326 4442  |  055 534 4377",
+  address:  "Ayebeng Ave, Adenta, Accra — Ghana",
   website:  "",
   logo_url: "",
 };

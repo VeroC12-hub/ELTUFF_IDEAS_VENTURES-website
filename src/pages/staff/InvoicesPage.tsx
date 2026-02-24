@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
 import { LayoutDashboard, Package, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, Plus, Building2, Mail, Trash2 , FlaskConical, BookOpen, Calculator } from "lucide-react";
 import { format } from "date-fns";
+import { printInvoice } from "@/lib/printInvoice";
+import { Printer } from "lucide-react";
 
 type LineItem = { description: string; quantity: string; unit_price: string };
 
@@ -385,6 +387,12 @@ export default function InvoicesPage() {
                   <p className="text-muted-foreground">{selected.notes}</p>
                 </div>
               )}
+
+              {/* Print invoice */}
+              <Button size="sm" variant="outline" className="w-full flex items-center gap-2"
+                onClick={() => printInvoice(selected)}>
+                <Printer className="h-4 w-4" /> Print / Download Invoice
+              </Button>
 
               {/* Quick status actions */}
               <div className="flex gap-2 pt-1 border-t border-border">
