@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAllProducts, useAllCategories, useCreateProduct, useUpdateProduct, useDeleteProduct, Product } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, LayoutDashboard, Package, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard , FlaskConical, BookOpen, Calculator } from "lucide-react";
+import ImageUpload from "@/components/ImageUpload";
 
 const navGroups = [
   { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
@@ -308,9 +309,12 @@ export default function ProductsPage() {
               <Input type="number" min="0" value={form.min_stock_level} onChange={e => set("min_stock_level", e.target.value)} />
             </div>
             <div className="sm:col-span-2 space-y-1">
-              <Label>Image URL</Label>
-              <Input value={form.image_url} onChange={e => set("image_url", e.target.value)} placeholder="https://…" />
-              {form.image_url && <img src={form.image_url} alt="preview" className="mt-2 h-24 w-24 rounded-lg object-cover border border-border" onError={e => (e.currentTarget.style.display = "none")} />}
+              <Label>Product Image</Label>
+              <ImageUpload
+                bucket="product-images"
+                value={form.image_url}
+                onChange={url => set("image_url", url)}
+              />
             </div>
             <div className="flex items-center gap-3">
               <input type="checkbox" id="is_active" checked={form.is_active} onChange={e => set("is_active", e.target.checked)} className="h-4 w-4 accent-primary" />
