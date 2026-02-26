@@ -7,7 +7,9 @@ import { useClients, useUpdateClientTier, ClientProfile, ClientTier } from "@/ho
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard , FlaskConical, BookOpen, Calculator } from "lucide-react";
 import { format } from "date-fns";
-import { loadTierNames } from "@/pages/staff/SettingsPage";
+import { loadTierNames, saveTierNames } from "@/pages/staff/SettingsPage";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 const TIER_COLORS: Record<ClientTier, string> = {
   retail: "bg-blue-100 text-blue-700",
@@ -30,7 +32,21 @@ export default function ClientsPage() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ClientProfile | null>(null);
-  const tierNames = loadTierNames();
+  const [tierNames, setTierNames] = useState(loadTierNames);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameForm, setRenameForm] = useState({ retail: "", wholesale: "", distributor: "" });
+
+  const openRename = () => {
+    setRenameForm({ retail: tierNames.retail, wholesale: tierNames.wholesale, distributor: tierNames.distributor });
+    setRenameOpen(true);
+  };
+  const saveRename = () => {
+    saveTierNames(renameForm.retail, renameForm.wholesale, renameForm.distributor);
+    setTierNames(loadTierNames());
+    setRenameOpen(false);
+    toast({ title: "Tier names updated" });
+  };
+
   const TIER_LABELS: Record<ClientTier, string> = {
     retail:      tierNames.retail,
     wholesale:   tierNames.wholesale,
@@ -59,9 +75,14 @@ export default function ClientsPage() {
   return (
     <DashboardLayout navGroups={navGroups} portalName="Staff Portal">
       <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Clients</h1>
-          <p className="text-muted-foreground text-sm">{clients.length} registered client{clients.length !== 1 ? "s" : ""}</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Clients</h1>
+            <p className="text-muted-foreground text-sm">{clients.length} registered client{clients.length !== 1 ? "s" : ""}</p>
+          </div>
+          <Button size="sm" variant="outline" className="flex items-center gap-1.5 text-xs" onClick={openRename}>
+            <Pencil className="h-3 w-3" /> Rename Tiers
+          </Button>
         </div>
 
         <Input
@@ -235,6 +256,34 @@ export default function ClientsPage() {
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Rename Tiers Dialog */}
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename Client Tiers</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-xs text-muted-foreground">
+              Give your three pricing categories any names that suit your business.
+            </p>
+            {(["retail", "wholesale", "distributor"] as ClientTier[]).map((key, idx) => (
+              <div key={key} className="space-y-1.5">
+                <label className="text-sm font-medium">Tier {idx + 1} (was "{["Retail","Wholesale","Distributor"][idx]}")</label>
+                <Input
+                  className="h-9"
+                  value={renameForm[key]}
+                  onChange={e => setRenameForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={["Retail","Wholesale","Distributor"][idx]}
+                />
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1" onClick={saveRename}>Save Names</Button>
+              <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

@@ -16,6 +16,7 @@ import { LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, Shopp
 import { format } from "date-fns";
 import { printInvoice } from "@/lib/printInvoice";
 import { loadCompany } from "@/pages/staff/SettingsPage";
+import { generatePdfBlob, shareViaWhatsApp } from "@/lib/generatePdf";
 
 /** Convert a local phone number to WhatsApp-compatible international format.
  *  Ghana: 0XXXXXXXXX → 233XXXXXXXXX  */
@@ -74,13 +75,23 @@ export default function InvoicesPage() {
   const { data: partPayments = [] } = usePartialPayments(selected?.id ?? null);
   const addPayment = useAddPartialPayment();
   const deletePayment = useDeletePartialPayment();
-  const [showPayForm, setShowPayForm] = useState(false);
+  // "full" = pre-filled full balance (amount disabled), "partial" = amount editable
+  const [payMode, setPayMode] = useState<"full" | "partial" | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
   const [payMomo, setPayMomo] = useState("");
   const [payRep, setPayRep] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
   const [payRef, setPayRef] = useState("");
+
+  const openPayForm = (mode: "full" | "partial") => {
+    const balance = Math.max(0, (selected?.total_amount ?? 0) - ((selected as any)?.amount_paid ?? 0));
+    setPayMode(mode);
+    setPayAmount(mode === "full" ? balance.toFixed(2) : "");
+    setPayRep(""); setPayRef(""); setPayMomo("");
+    setPayDate(new Date().toISOString().slice(0, 10));
+    setPayMethod("cash");
+  };
 
   const handleAddPayment = async () => {
     if (!selected || !payAmount || !payRep.trim()) {
@@ -98,7 +109,7 @@ export default function InvoicesPage() {
         created_by: user?.id,
       });
       toast({ title: "Payment recorded" });
-      setShowPayForm(false);
+      setPayMode(null);
       setPayAmount(""); setPayRep(""); setPayRef(""); setPayMomo("");
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed", variant: "destructive" });
@@ -404,7 +415,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Invoice Detail Dialog */}
-      <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={o => { if (!o) { setSelected(null); setPayMode(null); } }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-mono">{selected?.invoice_number}</DialogTitle>
@@ -438,16 +449,32 @@ export default function InvoicesPage() {
                     </div>
                   )}
                 </div>
-                <Select value={selected.status} onValueChange={v => handleStatusChange(selected.id, v)}>
-                  <SelectTrigger className={`h-8 text-xs w-36 font-medium ${statusColor[selected.status]}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map(s => (
-                      <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col items-end gap-1">
+                  <Select
+                    value={selected.status}
+                    onValueChange={v => {
+                      if (v === "_full") { openPayForm("full"); }
+                      else if (v === "_part") { openPayForm("partial"); }
+                      else { handleStatusChange(selected.id, v); }
+                    }}
+                  >
+                    <SelectTrigger className={`h-8 text-xs w-40 font-medium ${statusColor[selected.status]}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map(s => (
+                        <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>
+                      ))}
+                      <div className="border-t border-border my-1" />
+                      <SelectItem value="_full" className="text-xs text-green-700 font-medium">
+                        ✅ Record Full Payment
+                      </SelectItem>
+                      <SelectItem value="_part" className="text-xs text-orange-600 font-medium">
+                        🔸 Record Part Payment
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Dates */}
@@ -521,14 +548,86 @@ export default function InvoicesPage() {
                 </div>
               )}
 
+              {/* ── Inline Payment Form (triggered from status dropdown) ── */}
+              {payMode && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between bg-muted/50 px-3 py-2">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {payMode === "full" ? "✅ RECORD FULL PAYMENT" : "🔸 RECORD PART PAYMENT"}
+                    </span>
+                    <button onClick={() => setPayMode(null)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Amount (₵) {payMode === "full" ? "(full balance)" : "*"}
+                        </Label>
+                        <Input
+                          type="number" min="0.01" step="0.01" className="h-8 text-sm"
+                          value={payAmount}
+                          onChange={e => setPayAmount(e.target.value)}
+                          disabled={payMode === "full"}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Date *</Label>
+                        <Input type="date" className="h-8 text-sm"
+                          value={payDate} onChange={e => setPayDate(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Collected by (Sales Rep) *</Label>
+                        <Input className="h-8 text-sm" placeholder="Rep name"
+                          value={payRep} onChange={e => setPayRep(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Payment Method</Label>
+                        <Select value={payMethod} onValueChange={v => setPayMethod(v as PaymentMethod)}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(m => (
+                              <SelectItem key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {payMethod === "mobile_money" && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">MoMo Network</Label>
+                        <Select value={payMomo} onValueChange={setPayMomo}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MTN">MTN MoMo</SelectItem>
+                            <SelectItem value="Vodafone">Vodafone Cash</SelectItem>
+                            <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Receipt / Ref # (optional)</Label>
+                      <Input className="h-8 text-sm" placeholder="Optional reference"
+                        value={payRef} onChange={e => setPayRef(e.target.value)} />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" variant="accent" className="flex-1"
+                        onClick={handleAddPayment} disabled={addPayment.isPending}>
+                        {addPayment.isPending ? "Saving…" : payMode === "full" ? "Confirm Full Payment" : "Record Part Payment"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setPayMode(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ── Part Payments ── */}
               <div className="border border-border rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between bg-muted/50 px-3 py-2">
                   <span className="text-xs font-semibold text-muted-foreground">PAYMENTS RECEIVED</span>
-                  <Button size="sm" variant="outline" className="h-6 text-xs px-2"
-                    onClick={() => { setShowPayForm(v => !v); }}>
-                    <DollarSign className="h-3 w-3 mr-1" /> Add
-                  </Button>
                 </div>
 
                 {/* Amount paid summary */}
@@ -544,69 +643,6 @@ export default function InvoicesPage() {
                     ₵ {Math.max(0, selected.total_amount - ((selected as any).amount_paid ?? 0)).toFixed(2)}
                   </span>
                 </div>
-
-                {/* Add payment form */}
-                {showPayForm && (
-                  <div className="p-3 border-b border-border space-y-2 bg-muted/10">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Amount (₵) *</Label>
-                        <Input type="number" min="0.01" step="0.01" className="h-8 text-sm"
-                          value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="0.00" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Date *</Label>
-                        <Input type="date" className="h-8 text-sm"
-                          value={payDate} onChange={e => setPayDate(e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Payment Method *</Label>
-                        <Select value={payMethod} onValueChange={v => setPayMethod(v as PaymentMethod)}>
-                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(m => (
-                              <SelectItem key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {payMethod === "mobile_money" && (
-                        <div className="space-y-1">
-                          <Label className="text-xs">MoMo Network</Label>
-                          <Select value={payMomo} onValueChange={setPayMomo}>
-                            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MTN">MTN MoMo</SelectItem>
-                              <SelectItem value="Vodafone">Vodafone Cash</SelectItem>
-                              <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Collected by (Sales Rep) *</Label>
-                        <Input className="h-8 text-sm" placeholder="Rep name"
-                          value={payRep} onChange={e => setPayRep(e.target.value)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Receipt / Ref #</Label>
-                        <Input className="h-8 text-sm" placeholder="Optional"
-                          value={payRef} onChange={e => setPayRef(e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="accent" className="flex-1"
-                        onClick={handleAddPayment} disabled={addPayment.isPending}>
-                        {addPayment.isPending ? "Saving…" : "Record Payment"}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Cancel</Button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Payment history */}
                 {partPayments.length === 0 ? (
@@ -644,15 +680,42 @@ export default function InvoicesPage() {
                   <Printer className="h-4 w-4" /> Print / Download
                 </Button>
                 <Button size="sm" variant="outline" className="flex-1 flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
-                  onClick={() => {
-                    const phone = toWaNumber(selected.profiles?.phone);
-                    const msg = buildInvoiceWaMessage(selected);
-                    const url = phone
-                      ? `https://wa.me/${phone}?text=${msg}`
-                      : `https://wa.me/?text=${msg}`;
-                    window.open(url, "_blank");
+                  onClick={async () => {
+                    const co = loadCompany();
+                    const clientPhone = selected.profiles?.phone ?? (selected as any).billing_phone ?? null;
+                    const clientName = selected.profiles?.full_name ?? (selected as any).billing_name ?? "Valued Customer";
+                    const blob = generatePdfBlob({
+                      type: "invoice",
+                      invoice_number: selected.invoice_number,
+                      client_name: clientName,
+                      client_email: selected.profiles?.email,
+                      client_phone: clientPhone ?? undefined,
+                      issued_date: format(new Date(selected.created_at), "MMM d, yyyy"),
+                      due_date: selected.due_date ? format(new Date(selected.due_date), "MMM d, yyyy") : undefined,
+                      items: (selected.invoice_items ?? []).map(i => ({
+                        description: i.description,
+                        quantity: Number(i.quantity),
+                        unit_price: Number(i.unit_price),
+                        total_price: Number(i.total_price),
+                      })),
+                      subtotal: selected.amount,
+                      tax_amount: selected.tax_amount,
+                      total_amount: selected.total_amount,
+                      notes: selected.notes ?? undefined,
+                      company_name: co.name,
+                      company_phone: co.phone,
+                      company_whatsapp: co.whatsapp,
+                      company_email: co.email,
+                      company_address: co.address,
+                    });
+                    await shareViaWhatsApp({
+                      pdfBlob: blob,
+                      filename: `${selected.invoice_number}.pdf`,
+                      waPhone: toWaNumber(clientPhone),
+                      message: buildInvoiceWaMessage(selected),
+                    });
                   }}>
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                  <MessageCircle className="h-4 w-4" /> WhatsApp + PDF
                 </Button>
               </div>
 

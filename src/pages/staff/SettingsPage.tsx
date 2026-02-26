@@ -103,8 +103,19 @@ function loadTierNames(): { retail: string; wholesale: string; distributor: stri
   };
 }
 
+/** Save only the 3 tier names without touching other defaults */
+function saveTierNames(retail: string, wholesale: string, distributor: string) {
+  const current = loadDefaults();
+  saveDefaults({
+    ...current,
+    tier_retail_name:      retail      || "Retail",
+    tier_wholesale_name:   wholesale   || "Wholesale",
+    tier_distributor_name: distributor || "Distributor",
+  });
+}
+
 // Export so other pages (invoices, orders) can read these
-export { loadDefaults, loadCompany, loadTierNames };
+export { loadDefaults, loadCompany, loadTierNames, saveTierNames };
 export type { BusinessDefaults, CompanySettings };
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";

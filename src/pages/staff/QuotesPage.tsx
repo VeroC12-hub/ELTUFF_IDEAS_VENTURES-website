@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { loadCompany } from "@/pages/staff/SettingsPage";
+import { generatePdfBlob, shareViaWhatsApp } from "@/lib/generatePdf";
 
 function toWaNumber(phone: string | null | undefined): string {
   if (!phone) return "";
@@ -597,21 +598,49 @@ export default function QuotesPage() {
                 </div>
               )}
 
-              {/* WhatsApp send */}
+              {/* WhatsApp + PDF */}
               <Button size="sm" variant="outline" className="w-full flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
-                onClick={() => {
-                  const phone = toWaNumber(selected.profiles?.phone);
-                  const name = selected.profiles?.full_name ?? "Valued Customer";
-                  const valid = selected.valid_until ? `\nValid until: ${format(new Date(selected.valid_until), "MMM d, yyyy")}` : "";
+                onClick={async () => {
                   const co = loadCompany();
+                  const clientPhone = selected.profiles?.phone ?? (selected as any).billing_phone ?? null;
+                  const clientName = selected.profiles?.full_name ?? (selected as any).billing_name ?? "Valued Customer";
                   const phones = [co.whatsapp, co.phone].filter(Boolean).join("  |  ");
+                  const valid = selected.valid_until ? `\nValid until: ${format(new Date(selected.valid_until), "MMM d, yyyy")}` : "";
                   const msg = encodeURIComponent(
-                    `Hello ${name},\n\nPlease find attached Quote *${selected.quote_number}* for *GHS ${selected.total_amount.toFixed(2)}*.${valid}\n\nThank you for choosing us!\n\n${co.name}\n📞 ${phones}`
+                    `Hello ${clientName},\n\nPlease find attached Quote *${selected.quote_number}* for *GHS ${selected.total_amount.toFixed(2)}*.${valid}\n\nThank you for choosing us!\n\n${co.name}\n📞 ${phones}`
                   );
-                  const url = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
-                  window.open(url, "_blank");
+                  const blob = generatePdfBlob({
+                    type: "quote",
+                    quote_number: selected.quote_number,
+                    client_name: clientName,
+                    client_email: selected.profiles?.email,
+                    client_phone: clientPhone ?? undefined,
+                    issued_date: format(new Date(selected.created_at), "MMM d, yyyy"),
+                    valid_until: selected.valid_until ? format(new Date(selected.valid_until), "MMM d, yyyy") : undefined,
+                    items: (selected.quote_items ?? []).map(i => ({
+                      description: i.description,
+                      quantity: Number(i.quantity),
+                      unit_price: Number(i.unit_price),
+                      total_price: Number(i.total_price),
+                    })),
+                    subtotal: selected.subtotal,
+                    tax_amount: selected.tax_amount,
+                    total_amount: selected.total_amount,
+                    notes: selected.notes ?? undefined,
+                    company_name: co.name,
+                    company_phone: co.phone,
+                    company_whatsapp: co.whatsapp,
+                    company_email: co.email,
+                    company_address: co.address,
+                  });
+                  await shareViaWhatsApp({
+                    pdfBlob: blob,
+                    filename: `${selected.quote_number}.pdf`,
+                    waPhone: toWaNumber(clientPhone),
+                    message: msg,
+                  });
                 }}>
-                <MessageCircle className="h-4 w-4" /> Send via WhatsApp
+                <MessageCircle className="h-4 w-4" /> Send via WhatsApp + PDF
               </Button>
 
               {/* Action buttons */}
