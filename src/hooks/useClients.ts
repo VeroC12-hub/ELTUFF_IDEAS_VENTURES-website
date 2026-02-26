@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+
+export type ClientTier = "retail" | "wholesale" | "distributor";
 
 export type ClientProfile = Tables<"profiles"> & {
   order_count?: number;
@@ -43,3 +45,17 @@ export const useClients = () =>
       return withStats as ClientProfile[];
     },
   });
+
+export const useUpdateClientTier = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, tier }: { userId: string; tier: ClientTier }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ client_tier: tier } as any)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
+  });
+};

@@ -27,14 +27,17 @@ const SECTIONS = [
 
 type FormData = {
   name: string; description: string; price: string; old_price: string;
-  unit: string; sku: string; category_id: string; stock_quantity: string;
-  min_stock_level: string; image_url: string; tag: string;
-  storefront_section: string; is_active: boolean;
+  price_retail: string; price_wholesale: string; price_distributor: string;
+  size: string; unit: string; sku: string; category_id: string;
+  stock_quantity: string; min_stock_level: string; image_url: string;
+  tag: string; storefront_section: string; is_active: boolean;
 };
 
 const empty: FormData = {
-  name: "", description: "", price: "", old_price: "", unit: "unit",
-  sku: "", category_id: "", stock_quantity: "0", min_stock_level: "0",
+  name: "", description: "", price: "", old_price: "",
+  price_retail: "", price_wholesale: "", price_distributor: "",
+  size: "", unit: "unit", sku: "", category_id: "",
+  stock_quantity: "0", min_stock_level: "0",
   image_url: "", tag: "", storefront_section: "none", is_active: true,
 };
 
@@ -63,8 +66,12 @@ export default function ProductsPage() {
     setEditing(p);
     setForm({
       name: p.name, description: p.description ?? "", price: String(p.price),
-      old_price: p.old_price ? String(p.old_price) : "", unit: p.unit,
-      sku: p.sku ?? "", category_id: p.category_id ?? "",
+      old_price: p.old_price ? String(p.old_price) : "",
+      price_retail: (p as any).price_retail != null ? String((p as any).price_retail) : "",
+      price_wholesale: (p as any).price_wholesale != null ? String((p as any).price_wholesale) : "",
+      price_distributor: (p as any).price_distributor != null ? String((p as any).price_distributor) : "",
+      size: (p as any).size ?? "",
+      unit: p.unit, sku: p.sku ?? "", category_id: p.category_id ?? "",
       stock_quantity: String(p.stock_quantity), min_stock_level: String(p.min_stock_level),
       image_url: p.image_url ?? "", tag: p.tag ?? "",
       storefront_section: p.storefront_section ?? "none", is_active: p.is_active,
@@ -82,6 +89,10 @@ export default function ProductsPage() {
     const payload = {
       name: form.name.trim(), description: form.description,
       price: parseFloat(form.price), old_price: form.old_price ? parseFloat(form.old_price) : null,
+      price_retail: form.price_retail ? parseFloat(form.price_retail) : null,
+      price_wholesale: form.price_wholesale ? parseFloat(form.price_wholesale) : null,
+      price_distributor: form.price_distributor ? parseFloat(form.price_distributor) : null,
+      size: form.size || null,
       unit: form.unit, sku: form.sku || null,
       category_id: form.category_id || null,
       stock_quantity: parseFloat(form.stock_quantity) || 0,
@@ -89,7 +100,7 @@ export default function ProductsPage() {
       image_url: form.image_url || null, tag: form.tag || null,
       storefront_section: form.storefront_section === "none" ? null : form.storefront_section,
       is_active: form.is_active,
-    };
+    } as any;
     try {
       if (dialog === "create") {
         await createProduct.mutateAsync({ ...payload, created_by: user?.id });
@@ -232,6 +243,31 @@ export default function ProductsPage() {
             <div className="space-y-1">
               <Label>Old Price (₵) — for sale badge</Label>
               <Input type="number" min="0" step="0.01" value={form.old_price} onChange={e => set("old_price", e.target.value)} placeholder="Leave blank if no discount" />
+            </div>
+
+            {/* ── Pricing tiers ── */}
+            <div className="sm:col-span-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Client Pricing Tiers</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Retail Price (₵)</Label>
+                  <Input type="number" min="0" step="0.01" value={form.price_retail} onChange={e => set("price_retail", e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Wholesale Price (₵)</Label>
+                  <Input type="number" min="0" step="0.01" value={form.price_wholesale} onChange={e => set("price_wholesale", e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Distributor Price (₵)</Label>
+                  <Input type="number" min="0" step="0.01" value={form.price_distributor} onChange={e => set("price_distributor", e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">When creating invoices/quotes, the correct price auto-fills based on the client's tier.</p>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Size / Variant</Label>
+              <Input value={form.size} onChange={e => set("size", e.target.value)} placeholder="e.g. 250ml, 500g, 1L" />
             </div>
             <div className="space-y-1">
               <Label>Unit</Label>

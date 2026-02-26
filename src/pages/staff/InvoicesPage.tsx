@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllInvoices, useUpdateInvoiceStatus, useCreateInvoice, Invoice } from "@/hooks/useInvoices";
 import { useClients } from "@/hooks/useClients";
+import { useAllProducts } from "@/hooks/useProducts";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -43,6 +44,7 @@ export default function InvoicesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const createInvoice = useCreateInvoice();
   const { data: clients = [] } = useClients();
+  const { data: products = [] } = useAllProducts();
   const [selected, setSelected] = useState<Invoice | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -71,6 +73,20 @@ export default function InvoicesPage() {
   const resetCreate = () => {
     setClientId(""); setDueDate(""); setTaxPercent("0"); setNotes("");
     setLines([{ description: "", quantity: "1", unit_price: "" }]);
+  };
+
+  // Auto-fill price from product + client tier
+  const pickProduct = (lineIdx: number, productId: string) => {
+    const prod = products.find(p => p.id === productId);
+    if (!prod) return;
+    const client = clients.find(c => c.user_id === clientId);
+    const tier = (client as any)?.client_tier ?? "retail";
+    const tierPrice = (prod as any)[`price_${tier}`];
+    const price = tierPrice ?? prod.price;
+    const desc = prod.name + ((prod as any).size ? ` (${(prod as any).size})` : "");
+    setLines(l => l.map((row, idx) =>
+      idx === lineIdx ? { ...row, description: desc, unit_price: String(price ?? "") } : row
+    ));
   };
 
   const handleCreate = async () => {
@@ -464,12 +480,26 @@ export default function InvoicesPage() {
                 <div className="divide-y divide-border">
                   {lines.map((line, i) => (
                     <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
-                      <Input
-                        className="col-span-6 h-8 text-sm"
-                        placeholder="Description…"
-                        value={line.description}
-                        onChange={e => updateLine(i, "description", e.target.value)}
-                      />
+                      <div className="col-span-6 flex flex-col gap-1">
+                        <Select onValueChange={v => pickProduct(i, v)}>
+                          <SelectTrigger className="h-7 text-xs text-muted-foreground">
+                            <SelectValue placeholder="Pick product…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map(p => (
+                              <SelectItem key={p.id} value={p.id} className="text-xs">
+                                {p.name}{(p as any).size ? ` — ${(p as any).size}` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder="Description…"
+                          value={line.description}
+                          onChange={e => updateLine(i, "description", e.target.value)}
+                        />
+                      </div>
                       <Input
                         className="col-span-2 h-8 text-sm text-right"
                         type="number" min="0" step="0.01"
