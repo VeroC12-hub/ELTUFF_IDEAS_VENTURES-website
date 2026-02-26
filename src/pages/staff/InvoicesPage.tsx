@@ -7,13 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAllInvoices, useUpdateInvoiceStatus, useCreateInvoice, Invoice } from "@/hooks/useInvoices";
 import { useClients } from "@/hooks/useClients";
 import { useAllProducts } from "@/hooks/useProducts";
+import { usePartialPayments, useAddPartialPayment, useDeletePartialPayment, PAYMENT_METHOD_LABELS, PaymentMethod } from "@/hooks/usePartialPayments";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
-import { LayoutDashboard, Package, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, Plus, Building2, Mail, Trash2 , FlaskConical, BookOpen, Calculator } from "lucide-react";
+import { LayoutDashboard, Package, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, Plus, Building2, Mail, Trash2, Printer, FlaskConical, BookOpen, Calculator, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { printInvoice } from "@/lib/printInvoice";
-import { Printer } from "lucide-react";
 
 type LineItem = { description: string; quantity: string; unit_price: string };
 
@@ -43,9 +44,45 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const createInvoice = useCreateInvoice();
+  const { user } = useAuth();
   const { data: clients = [] } = useClients();
   const { data: products = [] } = useAllProducts();
   const [selected, setSelected] = useState<Invoice | null>(null);
+
+  // Part payment state
+  const { data: partPayments = [] } = usePartialPayments(selected?.id ?? null);
+  const addPayment = useAddPartialPayment();
+  const deletePayment = useDeletePartialPayment();
+  const [showPayForm, setShowPayForm] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState<PaymentMethod>("cash");
+  const [payMomo, setPayMomo] = useState("");
+  const [payRep, setPayRep] = useState("");
+  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payRef, setPayRef] = useState("");
+
+  const handleAddPayment = async () => {
+    if (!selected || !payAmount || !payRep.trim()) {
+      toast({ title: "Amount and sales rep name are required", variant: "destructive" }); return;
+    }
+    try {
+      await addPayment.mutateAsync({
+        invoice_id: selected.id,
+        amount: parseFloat(payAmount),
+        payment_method: payMethod,
+        momo_network: payMethod === "mobile_money" ? payMomo || null : null,
+        collected_by: payRep.trim(),
+        received_at: payDate,
+        reference: payRef || null,
+        created_by: user?.id,
+      });
+      toast({ title: "Payment recorded" });
+      setShowPayForm(false);
+      setPayAmount(""); setPayRep(""); setPayRef(""); setPayMomo("");
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed", variant: "destructive" });
+    }
+  };
   const [createOpen, setCreateOpen] = useState(false);
 
   // Create form state
@@ -403,6 +440,122 @@ export default function InvoicesPage() {
                   <p className="text-muted-foreground">{selected.notes}</p>
                 </div>
               )}
+
+              {/* ── Part Payments ── */}
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between bg-muted/50 px-3 py-2">
+                  <span className="text-xs font-semibold text-muted-foreground">PAYMENTS RECEIVED</span>
+                  <Button size="sm" variant="outline" className="h-6 text-xs px-2"
+                    onClick={() => { setShowPayForm(v => !v); }}>
+                    <DollarSign className="h-3 w-3 mr-1" /> Add
+                  </Button>
+                </div>
+
+                {/* Amount paid summary */}
+                <div className="px-3 py-2 text-xs flex justify-between border-b border-border">
+                  <span className="text-muted-foreground">Total Paid</span>
+                  <span className="font-bold text-green-600">
+                    ₵ {((selected as any).amount_paid ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="px-3 py-1 text-xs flex justify-between border-b border-border bg-muted/20">
+                  <span className="text-muted-foreground">Balance Due</span>
+                  <span className="font-bold text-orange-600">
+                    ₵ {Math.max(0, selected.total_amount - ((selected as any).amount_paid ?? 0)).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Add payment form */}
+                {showPayForm && (
+                  <div className="p-3 border-b border-border space-y-2 bg-muted/10">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Amount (₵) *</Label>
+                        <Input type="number" min="0.01" step="0.01" className="h-8 text-sm"
+                          value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="0.00" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Date *</Label>
+                        <Input type="date" className="h-8 text-sm"
+                          value={payDate} onChange={e => setPayDate(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Payment Method *</Label>
+                        <Select value={payMethod} onValueChange={v => setPayMethod(v as PaymentMethod)}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(m => (
+                              <SelectItem key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {payMethod === "mobile_money" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">MoMo Network</Label>
+                          <Select value={payMomo} onValueChange={setPayMomo}>
+                            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MTN">MTN MoMo</SelectItem>
+                              <SelectItem value="Vodafone">Vodafone Cash</SelectItem>
+                              <SelectItem value="AirtelTigo">AirtelTigo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Collected by (Sales Rep) *</Label>
+                        <Input className="h-8 text-sm" placeholder="Rep name"
+                          value={payRep} onChange={e => setPayRep(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Receipt / Ref #</Label>
+                        <Input className="h-8 text-sm" placeholder="Optional"
+                          value={payRef} onChange={e => setPayRef(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="accent" className="flex-1"
+                        onClick={handleAddPayment} disabled={addPayment.isPending}>
+                        {addPayment.isPending ? "Saving…" : "Record Payment"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment history */}
+                {partPayments.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">No payments recorded yet</p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {partPayments.map(pay => (
+                      <div key={pay.id} className="flex items-center justify-between px-3 py-2 text-xs">
+                        <div>
+                          <p className="font-semibold">₵ {Number(pay.amount).toFixed(2)}
+                            <span className="ml-1 font-normal text-muted-foreground">
+                              via {PAYMENT_METHOD_LABELS[pay.payment_method]}
+                              {pay.momo_network ? ` (${pay.momo_network})` : ""}
+                            </span>
+                          </p>
+                          <p className="text-muted-foreground">
+                            {format(new Date(pay.received_at), "MMM d, yyyy")} · by {pay.collected_by}
+                            {pay.reference ? ` · Ref: ${pay.reference}` : ""}
+                          </p>
+                        </div>
+                        <button className="text-muted-foreground hover:text-destructive ml-2"
+                          onClick={() => deletePayment.mutate({ id: pay.id, invoiceId: selected.id })}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Print invoice */}
               <Button size="sm" variant="outline" className="w-full flex items-center gap-2"
