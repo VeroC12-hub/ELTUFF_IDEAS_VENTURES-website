@@ -6,7 +6,10 @@ export type QuoteItem = Tables<"quote_items">;
 
 export type Quote = Tables<"quotes"> & {
   quote_items?: QuoteItem[];
-  profiles?: { full_name: string; email: string; company_name: string | null } | null;
+  profiles?: { full_name: string; email: string; company_name: string | null; phone: string | null } | null;
+  billing_name?: string | null;
+  billing_phone?: string | null;
+  billing_address?: string | null;
 };
 
 // ─── All quotes (staff) ────────────────────────────────────────────────────────
@@ -25,7 +28,7 @@ export const useAllQuotes = () =>
           if (!q.client_id) return { ...q, profiles: null };
           const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name, email, company_name")
+            .select("full_name, email, company_name, phone")
             .eq("user_id", q.client_id)
             .single();
           return { ...q, profiles: profile };
@@ -45,12 +48,18 @@ export const useCreateQuote = () => {
       taxPercent,
       validUntil,
       notes,
+      billingName,
+      billingPhone,
+      billingAddress,
     }: {
-      clientId: string;
+      clientId?: string;
       items: { description: string; quantity: number; unit_price: number }[];
       taxPercent?: number;
       validUntil?: string;
       notes?: string;
+      billingName?: string;
+      billingPhone?: string;
+      billingAddress?: string;
     }) => {
       const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
       const taxPct   = taxPercent ?? 0;
@@ -60,15 +69,18 @@ export const useCreateQuote = () => {
       const { data: quote, error: qErr } = await supabase
         .from("quotes")
         .insert({
-          client_id:    clientId,
+          client_id:       clientId ?? null,
           subtotal,
-          tax_pct:      taxPct,
-          tax_amount:   tax,
-          total_amount: total,
-          valid_until:  validUntil ?? null,
-          notes:        notes ?? "",
-          status:       "draft",
-        })
+          tax_pct:         taxPct,
+          tax_amount:      tax,
+          total_amount:    total,
+          valid_until:     validUntil ?? null,
+          notes:           notes ?? "",
+          status:          "draft",
+          billing_name:    billingName ?? null,
+          billing_phone:   billingPhone ?? null,
+          billing_address: billingAddress ?? null,
+        } as any)
         .select()
         .single();
       if (qErr) throw qErr;

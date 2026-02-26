@@ -12,16 +12,37 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
-import { LayoutDashboard, Package, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, Plus, Building2, Mail, Trash2, Printer, FlaskConical, BookOpen, Calculator, DollarSign } from "lucide-react";
+import { LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, ShoppingCart, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, Plus, Building2, Mail, Trash2, Printer, FlaskConical, BookOpen, Calculator, DollarSign, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { printInvoice } from "@/lib/printInvoice";
+import { loadCompany } from "@/pages/staff/SettingsPage";
+
+/** Convert a local phone number to WhatsApp-compatible international format.
+ *  Ghana: 0XXXXXXXXX → 233XXXXXXXXX  */
+function toWaNumber(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 10) return "233" + digits.slice(1);
+  if (digits.startsWith("233")) return digits;
+  return digits;
+}
+
+function buildInvoiceWaMessage(inv: { invoice_number: string; total_amount: number; due_date?: string | null; profiles?: { full_name?: string } | null; billing_name?: string | null }): string {
+  const co = loadCompany();
+  const name = inv.profiles?.full_name ?? (inv as any).billing_name ?? "Valued Customer";
+  const due = inv.due_date ? `\nPayment due: ${format(new Date(inv.due_date), "MMM d, yyyy")}` : "";
+  const phones = [co.whatsapp, co.phone].filter(Boolean).join("  |  ");
+  return encodeURIComponent(
+    `Hello ${name},\n\nPlease find attached Invoice *${inv.invoice_number}* for *GHS ${inv.total_amount.toFixed(2)}*.${due}\n\nThank you for your business!\n\n${co.name}\n📞 ${phones}`
+  );
+}
 
 type LineItem = { description: string; quantity: string; unit_price: string };
 
 const navGroups = [
   { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
   { label: "Sales", items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
-  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }] },
+  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
   { label: "Production",  items: [{ title: "Materials",  url: "/staff/production/materials",  icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }] },
   { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
   { label: "System", items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
@@ -87,6 +108,10 @@ export default function InvoicesPage() {
 
   // Create form state
   const [clientId, setClientId] = useState("");
+  const [clientMode, setClientMode] = useState<"registered" | "walkin">("registered");
+  const [walkInName, setWalkInName] = useState("");
+  const [walkInPhone, setWalkInPhone] = useState("");
+  const [walkInAddress, setWalkInAddress] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [taxPercent, setTaxPercent] = useState("0");
   const [notes, setNotes] = useState("");
@@ -108,7 +133,9 @@ export default function InvoicesPage() {
   const grandTotal = subtotal + tax;
 
   const resetCreate = () => {
-    setClientId(""); setDueDate(""); setTaxPercent("0"); setNotes("");
+    setClientId(""); setClientMode("registered");
+    setWalkInName(""); setWalkInPhone(""); setWalkInAddress("");
+    setDueDate(""); setTaxPercent("0"); setNotes("");
     setLines([{ description: "", quantity: "1", unit_price: "" }]);
   };
 
@@ -127,15 +154,32 @@ export default function InvoicesPage() {
   };
 
   const handleCreate = async () => {
-    if (!clientId) { toast({ title: "Please select a client", variant: "destructive" }); return; }
     const validLines = lines.filter(l => l.description.trim() && l.unit_price);
     if (validLines.length === 0) { toast({ title: "Add at least one line item", variant: "destructive" }); return; }
-    try {
-      // Get auth user_id from the selected client profile
+
+    let userId: string | undefined;
+    let billingName: string | undefined;
+    let billingPhone: string | undefined;
+    let billingAddress: string | undefined;
+    let notifyPhone: string | undefined;
+
+    if (clientMode === "registered") {
+      if (!clientId) { toast({ title: "Please select a client", variant: "destructive" }); return; }
       const client = clients.find(c => c.id === clientId);
       if (!client) { toast({ title: "Client not found", variant: "destructive" }); return; }
-      await createInvoice.mutateAsync({
-        userId: client.user_id,
+      userId = client.user_id;
+      notifyPhone = (client as any).phone ?? undefined;
+    } else {
+      if (!walkInName.trim()) { toast({ title: "Please enter the client name", variant: "destructive" }); return; }
+      billingName = walkInName.trim();
+      billingPhone = walkInPhone.trim() || undefined;
+      billingAddress = walkInAddress.trim() || undefined;
+      notifyPhone = billingPhone;
+    }
+
+    try {
+      const invoice = await createInvoice.mutateAsync({
+        userId,
         items: validLines.map(l => ({
           description: l.description.trim(),
           quantity: parseFloat(l.quantity) || 1,
@@ -144,10 +188,30 @@ export default function InvoicesPage() {
         dueDate: dueDate || undefined,
         notes: notes || undefined,
         taxPercent: parseFloat(taxPercent) || 0,
+        billingName,
+        billingPhone,
+        billingAddress,
       });
       toast({ title: "Invoice created successfully" });
       setCreateOpen(false);
       resetCreate();
+
+      // Auto-open WhatsApp if we have a phone number
+      if (notifyPhone) {
+        const waNum = toWaNumber(notifyPhone);
+        const clientName = clientMode === "walkin" ? billingName : clients.find(c => c.id === clientId)?.full_name ?? "Valued Customer";
+        const total = validLines.reduce((s, l) => s + (parseFloat(l.quantity) || 1) * (parseFloat(l.unit_price) || 0), 0);
+        const taxAmt = total * ((parseFloat(taxPercent) || 0) / 100);
+        const grandTotal = total + taxAmt;
+        const due = dueDate ? `\nPayment due: ${format(new Date(dueDate), "MMM d, yyyy")}` : "";
+        const co = loadCompany();
+        const phones = [co.whatsapp, co.phone].filter(Boolean).join("  |  ");
+        const msg = encodeURIComponent(
+          `Hello ${clientName},\n\nThank you for your business! Your invoice *${(invoice as any).invoice_number ?? ""}* for *GHS ${grandTotal.toFixed(2)}* has been prepared.${due}\n\nPlease contact us for any questions.\n\n${co.name}\n📞 ${phones}`
+        );
+        const url = waNum ? `https://wa.me/${waNum}?text=${msg}` : `https://wa.me/?text=${msg}`;
+        window.open(url, "_blank");
+      }
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed", variant: "destructive" });
     }
@@ -284,9 +348,11 @@ export default function InvoicesPage() {
                   <tr key={inv.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-mono text-xs">{inv.invoice_number}</td>
                     <td className="p-3">
-                      <p className="font-medium">{inv.profiles?.full_name || "Unknown"}</p>
+                      <p className="font-medium">
+                        {inv.profiles?.full_name || (inv as any).billing_name || "Walk-in Client"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {inv.profiles?.company_name || inv.profiles?.email}
+                        {inv.profiles?.company_name || inv.profiles?.email || (inv as any).billing_phone || ""}
                       </p>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
@@ -348,13 +414,27 @@ export default function InvoicesPage() {
               {/* Client info + status */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-semibold">{selected.profiles?.full_name || "Unknown"}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                    <Mail className="h-3 w-3" /> {selected.profiles?.email}
-                  </div>
+                  <p className="font-semibold">
+                    {selected.profiles?.full_name || (selected as any).billing_name || "Walk-in Client"}
+                  </p>
+                  {selected.profiles?.email && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                      <Mail className="h-3 w-3" /> {selected.profiles.email}
+                    </div>
+                  )}
                   {selected.profiles?.company_name && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                       <Building2 className="h-3 w-3" /> {selected.profiles.company_name}
+                    </div>
+                  )}
+                  {(selected as any).billing_phone && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                      <MessageCircle className="h-3 w-3" /> {(selected as any).billing_phone}
+                    </div>
+                  )}
+                  {(selected as any).billing_address && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {(selected as any).billing_address}
                     </div>
                   )}
                 </div>
@@ -557,11 +637,24 @@ export default function InvoicesPage() {
                 )}
               </div>
 
-              {/* Print invoice */}
-              <Button size="sm" variant="outline" className="w-full flex items-center gap-2"
-                onClick={() => printInvoice(selected)}>
-                <Printer className="h-4 w-4" /> Print / Download Invoice
-              </Button>
+              {/* Print & WhatsApp actions */}
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1 flex items-center gap-2"
+                  onClick={() => printInvoice(selected)}>
+                  <Printer className="h-4 w-4" /> Print / Download
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1 flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                  onClick={() => {
+                    const phone = toWaNumber(selected.profiles?.phone);
+                    const msg = buildInvoiceWaMessage(selected);
+                    const url = phone
+                      ? `https://wa.me/${phone}?text=${msg}`
+                      : `https://wa.me/?text=${msg}`;
+                    window.open(url, "_blank");
+                  }}>
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                </Button>
+              </div>
 
               {/* Quick status actions */}
               <div className="flex gap-2 pt-1 border-t border-border">
@@ -597,20 +690,55 @@ export default function InvoicesPage() {
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            {/* Client */}
-            <div className="space-y-1">
+            {/* Client mode toggle */}
+            <div className="space-y-2">
               <Label>Client *</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue placeholder="Select a client…" /></SelectTrigger>
-                <SelectContent>
-                  {clients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.full_name || c.email}
-                      {c.company_name ? ` — ${c.company_name}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1 bg-muted/60 rounded-lg p-1 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setClientMode("registered")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${clientMode === "registered" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
+                >Registered Client</button>
+                <button
+                  type="button"
+                  onClick={() => setClientMode("walkin")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${clientMode === "walkin" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
+                >Walk-in / Manual</button>
+              </div>
+
+              {clientMode === "registered" ? (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue placeholder="Select a registered client…" /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.full_name || c.email}
+                        {c.company_name ? ` — ${c.company_name}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Name *</Label>
+                      <Input className="h-8 text-sm" placeholder="Customer name"
+                        value={walkInName} onChange={e => setWalkInName(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">WhatsApp / Phone</Label>
+                      <Input className="h-8 text-sm" placeholder="0244xxxxxxx"
+                        value={walkInPhone} onChange={e => setWalkInPhone(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Address (optional)</Label>
+                    <Input className="h-8 text-sm" placeholder="Street, Town, Region"
+                      value={walkInAddress} onChange={e => setWalkInAddress(e.target.value)} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Line items */}

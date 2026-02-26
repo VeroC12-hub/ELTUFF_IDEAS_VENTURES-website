@@ -13,6 +13,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import ProductDetail from "./pages/ProductDetail";
 import ProductsPage from "./pages/staff/ProductsPage";
+import BottlesLabelsPage from "./pages/staff/BottlesLabelsPage";
 import InventoryPage from "./pages/staff/InventoryPage";
 import ClientsPage from "./pages/staff/ClientsPage";
 import OrdersPage from "./pages/staff/OrdersPage";
@@ -96,6 +97,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/bottles-labels"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <BottlesLabelsPage />
                 </ProtectedRoute>
               }
             />

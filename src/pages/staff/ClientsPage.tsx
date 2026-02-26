@@ -2,14 +2,23 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useClients, ClientProfile } from "@/hooks/useClients";
-import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard , FlaskConical, BookOpen, Calculator } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useClients, useUpdateClientTier, ClientProfile, ClientTier } from "@/hooks/useClients";
+import { useToast } from "@/hooks/use-toast";
+import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard , FlaskConical, BookOpen, Calculator } from "lucide-react";
 import { format } from "date-fns";
+import { loadTierNames } from "@/pages/staff/SettingsPage";
+
+const TIER_COLORS: Record<ClientTier, string> = {
+  retail: "bg-blue-100 text-blue-700",
+  wholesale: "bg-green-100 text-green-700",
+  distributor: "bg-purple-100 text-purple-700",
+};
 
 const navGroups = [
   { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
   { label: "Sales", items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
-  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }] },
+  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
   { label: "Production",  items: [{ title: "Materials",  url: "/staff/production/materials",  icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }] },
   { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
   { label: "System", items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
@@ -17,8 +26,26 @@ const navGroups = [
 
 export default function ClientsPage() {
   const { data: clients = [], isLoading } = useClients();
+  const updateTier = useUpdateClientTier();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ClientProfile | null>(null);
+  const tierNames = loadTierNames();
+  const TIER_LABELS: Record<ClientTier, string> = {
+    retail:      tierNames.retail,
+    wholesale:   tierNames.wholesale,
+    distributor: tierNames.distributor,
+  };
+
+  const handleTierChange = (client: ClientProfile, tier: ClientTier) => {
+    updateTier.mutate({ userId: client.user_id, tier }, {
+      onSuccess: () => {
+        toast({ title: "Tier updated", description: `${client.full_name || client.email} → ${TIER_LABELS[tier]}` });
+        if (selected?.id === client.id) setSelected({ ...selected, ...{ client_tier: tier } as any });
+      },
+      onError: () => toast({ title: "Failed to update tier", variant: "destructive" }),
+    });
+  };
 
   const filtered = clients.filter(c =>
     c.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,6 +79,7 @@ export default function ClientsPage() {
                   <th className="text-left p-3 font-medium text-muted-foreground">Client</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Company</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Contact</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Tier</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Orders</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Total Spent</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Joined</th>
@@ -71,7 +99,7 @@ export default function ClientsPage() {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
                       {search ? "No clients match your search" : "No clients yet"}
                     </td>
                   </tr>
@@ -90,6 +118,16 @@ export default function ClientsPage() {
                     </td>
                     <td className="p-3 text-muted-foreground">{c.company_name || "—"}</td>
                     <td className="p-3 text-muted-foreground">{c.phone || "—"}</td>
+                    <td className="p-3">
+                      {(() => {
+                        const tier = ((c as any).client_tier ?? "retail") as ClientTier;
+                        return (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIER_COLORS[tier]}`}>
+                            {TIER_LABELS[tier]}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="p-3 font-medium">{c.order_count ?? 0}</td>
                     <td className="p-3 font-medium">₵ {(c.total_spent ?? 0).toFixed(2)}</td>
                     <td className="p-3 text-muted-foreground text-xs">
@@ -128,6 +166,24 @@ export default function ClientsPage() {
                   <p className="font-semibold text-lg">{selected.full_name || "—"}</p>
                   <p className="text-sm text-muted-foreground">{selected.email}</p>
                 </div>
+              </div>
+
+              {/* Pricing Tier */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium min-w-[90px]">Pricing Tier</span>
+                <Select
+                  value={((selected as any).client_tier ?? "retail") as ClientTier}
+                  onValueChange={(v) => handleTierChange(selected, v as ClientTier)}
+                >
+                  <SelectTrigger className="h-8 text-sm flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="retail">{tierNames.retail}</SelectItem>
+                    <SelectItem value="wholesale">{tierNames.wholesale}</SelectItem>
+                    <SelectItem value="distributor">{tierNames.distributor}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Stats */}

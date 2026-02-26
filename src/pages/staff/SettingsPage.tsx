@@ -5,23 +5,25 @@ const COMPANY_KEY   = "eltuff_company_settings";
 const DEFAULTS_KEY  = "eltuff_business_defaults";
 
 interface CompanySettings {
-  name:     string;
-  tagline:  string;
-  email:    string;
-  phone:    string;
-  address:  string;
-  website:  string;
-  logo_url: string;
+  name:      string;
+  tagline:   string;
+  email:     string;
+  phone:     string;
+  whatsapp:  string;
+  address:   string;
+  website:   string;
+  logo_url:  string;
 }
 
 const defaultCompany: CompanySettings = {
-  name:     "Eltuff Ideas Ventures",
-  tagline:  "Ani's Pride Hair & Skin Products",
-  email:    "anisprideglobal@gmail.com",
-  phone:    "055 326 4442  |  055 534 4377",
-  address:  "Ayebeng Ave, Adenta, Accra — Ghana",
-  website:  "",
-  logo_url: "",
+  name:      "Eltuff Ideas Ventures",
+  tagline:   "Ani's Pride Hair & Skin Products",
+  email:     "anisprideglobal@gmail.com",
+  phone:     "055 326 4442  |  055 534 4377",
+  whatsapp:  "0244052135",
+  address:   "Ayebeng Ave, Adenta, Accra — Ghana",
+  website:   "",
+  logo_url:  "",
 };
 
 function loadCompany(): CompanySettings {
@@ -44,6 +46,10 @@ interface BusinessDefaults {
   low_stock_alert:   number;
   order_prefix:      string;
   invoice_prefix:    string;
+  // Client pricing tier names (customisable)
+  tier_retail_name:      string;
+  tier_wholesale_name:   string;
+  tier_distributor_name: string;
   // Production cost overheads (% of base material+overhead cost)
   vat_pct:           number;
   nhil_pct:          number;
@@ -63,6 +69,10 @@ const defaultBusiness: BusinessDefaults = {
   low_stock_alert:  10,
   order_prefix:     "ORD",
   invoice_prefix:   "INV",
+  // Client pricing tier names
+  tier_retail_name:      "Retail",
+  tier_wholesale_name:   "Wholesale",
+  tier_distributor_name: "Distributor",
   // Cosmetics / personal-care industry defaults for Ghana
   vat_pct:           15,   // Ghana standard VAT
   nhil_pct:          2.5,  // National Health Insurance Levy
@@ -83,15 +93,25 @@ function saveDefaults(data: BusinessDefaults) {
   localStorage.setItem(DEFAULTS_KEY, JSON.stringify(data));
 }
 
+// Convenience helper — returns the 3 tier display names
+function loadTierNames(): { retail: string; wholesale: string; distributor: string } {
+  const d = loadDefaults();
+  return {
+    retail:      d.tier_retail_name      || "Retail",
+    wholesale:   d.tier_wholesale_name   || "Wholesale",
+    distributor: d.tier_distributor_name || "Distributor",
+  };
+}
+
 // Export so other pages (invoices, orders) can read these
-export { loadDefaults, loadCompany };
+export { loadDefaults, loadCompany, loadTierNames };
 export type { BusinessDefaults, CompanySettings };
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  LayoutDashboard, Users, Package, Receipt, BarChart3,
+  LayoutDashboard, Users, Package, PackageOpen, Receipt, BarChart3,
   Settings, ShoppingCart, UserPlus, Warehouse, CreditCard,
   ClipboardList, User, Building2, SlidersHorizontal, KeyRound,
   Save, Loader2,
@@ -101,7 +121,7 @@ import {
 const navGroups = [
   { label: "Overview",   items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
   { label: "Sales",      items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
-  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }] },
+  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
   { label: "Production",  items: [{ title: "Materials",  url: "/staff/production/materials",  icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }] },
   { label: "Finance",    items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
   { label: "System",     items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
@@ -269,12 +289,13 @@ export default function StaffSettingsPage() {
 
             <div className="space-y-4">
               {[
-                { key: "name",     label: "Company Name",   placeholder: "Eltuff Ideas Ventures" },
-                { key: "tagline",  label: "Tagline",        placeholder: "Your business tagline" },
-                { key: "email",    label: "Business Email", placeholder: "info@eltuff.com" },
-                { key: "phone",    label: "Business Phone", placeholder: "+233 00 000 0000" },
-                { key: "website",  label: "Website",        placeholder: "https://eltuff.com" },
-                { key: "logo_url", label: "Logo URL",       placeholder: "https://..." },
+                { key: "name",      label: "Company Name",      placeholder: "Eltuff Ideas Ventures" },
+                { key: "tagline",   label: "Tagline",           placeholder: "Your business tagline" },
+                { key: "email",     label: "Business Email",    placeholder: "info@eltuff.com" },
+                { key: "phone",     label: "Business Phone",    placeholder: "+233 00 000 0000" },
+                { key: "whatsapp",  label: "WhatsApp Number",   placeholder: "0244052135" },
+                { key: "website",   label: "Website",           placeholder: "https://eltuff.com" },
+                { key: "logo_url",  label: "Logo URL",          placeholder: "https://..." },
               ].map(field => (
                 <div key={field.key} className="space-y-1.5">
                   <label className="text-sm font-medium">{field.label}</label>
@@ -435,6 +456,31 @@ export default function StaffSettingsPage() {
                 <p className="text-xs text-muted-foreground">
                   Alert when stock falls at or below this quantity
                 </p>
+              </div>
+            </div>
+
+            {/* Pricing Tiers */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Client Pricing Tiers</h3>
+              <p className="text-xs text-muted-foreground">
+                Rename the three pricing tiers to suit your business. These names appear in client profiles and on invoices.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { key: "tier_retail_name",      label: "Tier 1 (Retail)"      },
+                  { key: "tier_wholesale_name",   label: "Tier 2 (Wholesale)"   },
+                  { key: "tier_distributor_name", label: "Tier 3 (Distributor)" },
+                ].map(f => (
+                  <div key={f.key} className="space-y-1">
+                    <label className="text-xs font-medium">{f.label}</label>
+                    <input
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      value={defaultsForm[f.key as keyof BusinessDefaults] as string}
+                      onChange={e => setDef(f.key as keyof BusinessDefaults, e.target.value)}
+                      placeholder={f.label.split(" ")[2]?.replace(/[()]/g, "") ?? ""}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 

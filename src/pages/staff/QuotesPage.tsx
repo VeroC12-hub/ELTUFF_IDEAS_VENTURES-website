@@ -9,19 +9,28 @@ import { useAllQuotes, useCreateQuote, useUpdateQuoteStatus, useConvertQuoteToIn
 import { useClients } from "@/hooks/useClients";
 import { useToast } from "@/hooks/use-toast";
 import {
-  LayoutDashboard, Users, Package, Receipt, BarChart3, Settings,
+  LayoutDashboard, Users, Package, PackageOpen, Receipt, BarChart3, Settings,
   ShoppingCart, UserPlus, Warehouse, CreditCard, ClipboardList,
   FlaskConical, BookOpen, Calculator, Plus, Trash2,
-  Mail, Building2, FileText,
+  Mail, Building2, FileText, MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
+import { loadCompany } from "@/pages/staff/SettingsPage";
+
+function toWaNumber(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 10) return "233" + digits.slice(1);
+  if (digits.startsWith("233")) return digits;
+  return digits;
+}
 
 type LineItem = { description: string; quantity: string; unit_price: string };
 
 const navGroups = [
   { label: "Overview",    items: [{ title: "Dashboard",  url: "/staff/dashboard",                    icon: LayoutDashboard }] },
   { label: "Sales",       items: [{ title: "Quotes",     url: "/staff/quotes",                       icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
-  { label: "Management",  items: [{ title: "Clients",    url: "/staff/clients",                      icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }] },
+  { label: "Management",  items: [{ title: "Clients",    url: "/staff/clients",                      icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
   { label: "Production",  items: [{ title: "Materials",  url: "/staff/production/materials",         icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }] },
   { label: "Finance",     items: [{ title: "Accounts",   url: "/staff/accounts",                     icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
   { label: "System",      items: [{ title: "Team",       url: "/staff/team",                         icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
@@ -51,11 +60,15 @@ export default function QuotesPage() {
   const [createOpen, setCreateOpen]     = useState(false);
 
   // ── Create form state ──────────────────────────────────────────────────────
-  const [clientId,    setClientId]    = useState("");
-  const [validUntil,  setValidUntil]  = useState("");
-  const [taxPercent,  setTaxPercent]  = useState("0");
-  const [notes,       setNotes]       = useState("");
-  const [lines,       setLines]       = useState<LineItem[]>([
+  const [clientId,      setClientId]      = useState("");
+  const [clientMode,    setClientMode]    = useState<"registered" | "walkin">("registered");
+  const [walkInName,    setWalkInName]    = useState("");
+  const [walkInPhone,   setWalkInPhone]   = useState("");
+  const [walkInAddress, setWalkInAddress] = useState("");
+  const [validUntil,    setValidUntil]    = useState("");
+  const [taxPercent,    setTaxPercent]    = useState("0");
+  const [notes,         setNotes]         = useState("");
+  const [lines,         setLines]         = useState<LineItem[]>([
     { description: "", quantity: "1", unit_price: "" },
   ]);
 
@@ -69,29 +82,69 @@ export default function QuotesPage() {
   const grandTotal = subtotal + taxAmt;
 
   const resetCreate = () => {
-    setClientId(""); setValidUntil(""); setTaxPercent("0"); setNotes("");
+    setClientId(""); setClientMode("registered");
+    setWalkInName(""); setWalkInPhone(""); setWalkInAddress("");
+    setValidUntil(""); setTaxPercent("0"); setNotes("");
     setLines([{ description: "", quantity: "1", unit_price: "" }]);
   };
 
   const handleCreate = async () => {
-    if (!clientId) { toast({ title: "Please select a client", variant: "destructive" }); return; }
     const validLines = lines.filter(l => l.description.trim() && l.unit_price);
     if (!validLines.length) { toast({ title: "Add at least one line item", variant: "destructive" }); return; }
+
+    let cId: string | undefined;
+    let billingName: string | undefined;
+    let billingPhone: string | undefined;
+    let billingAddress: string | undefined;
+    let notifyPhone: string | undefined;
+    let displayName: string | undefined;
+
+    if (clientMode === "registered") {
+      if (!clientId) { toast({ title: "Please select a client", variant: "destructive" }); return; }
+      cId = clientId;
+      const client = clients.find(c => c.id === clientId);
+      notifyPhone = (client as any)?.phone ?? undefined;
+      displayName = client?.full_name ?? client?.email ?? "Valued Customer";
+    } else {
+      if (!walkInName.trim()) { toast({ title: "Please enter the client name", variant: "destructive" }); return; }
+      billingName    = walkInName.trim();
+      billingPhone   = walkInPhone.trim() || undefined;
+      billingAddress = walkInAddress.trim() || undefined;
+      notifyPhone    = billingPhone;
+      displayName    = billingName;
+    }
+
     try {
-      await createQuote.mutateAsync({
-        clientId,
+      const quote = await createQuote.mutateAsync({
+        clientId: cId,
         items: validLines.map(l => ({
           description: l.description.trim(),
           quantity:    parseFloat(l.quantity)   || 1,
           unit_price:  parseFloat(l.unit_price) || 0,
         })),
-        taxPercent:  parseFloat(taxPercent) || 0,
-        validUntil:  validUntil || undefined,
-        notes:       notes || undefined,
+        taxPercent:    parseFloat(taxPercent) || 0,
+        validUntil:    validUntil || undefined,
+        notes:         notes || undefined,
+        billingName,
+        billingPhone,
+        billingAddress,
       });
       toast({ title: "Quote created successfully" });
       setCreateOpen(false);
       resetCreate();
+
+      // Auto-open WhatsApp
+      if (notifyPhone) {
+        const co = loadCompany();
+        const phones = [co.whatsapp, co.phone].filter(Boolean).join("  |  ");
+        const waNum = toWaNumber(notifyPhone);
+        const valid = validUntil ? `\nValid until: ${format(new Date(validUntil), "MMM d, yyyy")}` : "";
+        const msg = encodeURIComponent(
+          `Hello ${displayName},\n\nThank you! Your quote *${(quote as any).quote_number ?? ""}* for *GHS ${grandTotal.toFixed(2)}* has been prepared.${valid}\n\nPlease contact us for any questions.\n\n${co.name}\n📞 ${phones}`
+        );
+        const url = waNum ? `https://wa.me/${waNum}?text=${msg}` : `https://wa.me/?text=${msg}`;
+        window.open(url, "_blank");
+      }
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed", variant: "destructive" });
     }
@@ -238,8 +291,8 @@ export default function QuotesPage() {
                   <tr key={q.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-mono text-xs">{q.quote_number}</td>
                     <td className="p-3">
-                      <p className="font-medium">{q.profiles?.full_name || "Unknown"}</p>
-                      <p className="text-xs text-muted-foreground">{q.profiles?.company_name || q.profiles?.email}</p>
+                      <p className="font-medium">{q.profiles?.full_name || (q as any).billing_name || "Walk-in Client"}</p>
+                      <p className="text-xs text-muted-foreground">{q.profiles?.company_name || q.profiles?.email || (q as any).billing_phone || ""}</p>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
                       {format(new Date(q.created_at), "MMM d, yyyy")}
@@ -294,18 +347,50 @@ export default function QuotesPage() {
 
           <div className="space-y-5 py-2">
             {/* Client */}
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label>Client *</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue placeholder="Select a client…" /></SelectTrigger>
-                <SelectContent>
-                  {clients.map(c => (
-                    <SelectItem key={c.id} value={c.user_id}>
-                      {c.full_name || c.email}{c.company_name ? ` — ${c.company_name}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1 bg-muted/60 rounded-lg p-1 w-fit">
+                <button type="button"
+                  onClick={() => setClientMode("registered")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${clientMode === "registered" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
+                >Registered Client</button>
+                <button type="button"
+                  onClick={() => setClientMode("walkin")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${clientMode === "walkin" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
+                >Walk-in / Manual</button>
+              </div>
+              {clientMode === "registered" ? (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue placeholder="Select a registered client…" /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.full_name || c.email}{c.company_name ? ` — ${c.company_name}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Name *</Label>
+                      <Input className="h-8 text-sm" placeholder="Customer name"
+                        value={walkInName} onChange={e => setWalkInName(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">WhatsApp / Phone</Label>
+                      <Input className="h-8 text-sm" placeholder="0244xxxxxxx"
+                        value={walkInPhone} onChange={e => setWalkInPhone(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Address (optional)</Label>
+                    <Input className="h-8 text-sm" placeholder="Street, Town, Region"
+                      value={walkInAddress} onChange={e => setWalkInAddress(e.target.value)} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Line items */}
@@ -511,6 +596,23 @@ export default function QuotesPage() {
                   <p className="text-muted-foreground">{selected.notes}</p>
                 </div>
               )}
+
+              {/* WhatsApp send */}
+              <Button size="sm" variant="outline" className="w-full flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                onClick={() => {
+                  const phone = toWaNumber(selected.profiles?.phone);
+                  const name = selected.profiles?.full_name ?? "Valued Customer";
+                  const valid = selected.valid_until ? `\nValid until: ${format(new Date(selected.valid_until), "MMM d, yyyy")}` : "";
+                  const co = loadCompany();
+                  const phones = [co.whatsapp, co.phone].filter(Boolean).join("  |  ");
+                  const msg = encodeURIComponent(
+                    `Hello ${name},\n\nPlease find attached Quote *${selected.quote_number}* for *GHS ${selected.total_amount.toFixed(2)}*.${valid}\n\nThank you for choosing us!\n\n${co.name}\n📞 ${phones}`
+                  );
+                  const url = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+                  window.open(url, "_blank");
+                }}>
+                <MessageCircle className="h-4 w-4" /> Send via WhatsApp
+              </Button>
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2 pt-1 border-t border-border">

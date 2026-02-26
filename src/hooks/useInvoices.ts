@@ -6,7 +6,11 @@ export type InvoiceItem = Tables<"invoice_items">;
 
 export type Invoice = Tables<"invoices"> & {
   invoice_items?: InvoiceItem[];
-  profiles?: { full_name: string; email: string; company_name: string | null } | null;
+  profiles?: { full_name: string; email: string; company_name: string | null; phone: string | null } | null;
+  // Walk-in client billing (set when no user_id)
+  billing_name?: string | null;
+  billing_phone?: string | null;
+  billing_address?: string | null;
 };
 
 // ─── Client: own invoices ──────────────────────────────────────────────────────
@@ -36,9 +40,10 @@ export const useAllInvoices = () =>
 
       const withProfiles = await Promise.all(
         (data ?? []).map(async (inv) => {
+          if (!inv.user_id) return { ...inv, profiles: null };
           const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name, email, company_name")
+            .select("full_name, email, company_name, phone")
             .eq("user_id", inv.user_id)
             .single();
           return { ...inv, profiles: profile };
@@ -59,13 +64,19 @@ export const useCreateInvoice = () => {
       dueDate,
       notes,
       taxPercent,
+      billingName,
+      billingPhone,
+      billingAddress,
     }: {
-      userId: string;
+      userId?: string;
       orderId?: string;
       items: { description: string; quantity: number; unit_price: number }[];
       dueDate?: string;
       notes?: string;
       taxPercent?: number;
+      billingName?: string;
+      billingPhone?: string;
+      billingAddress?: string;
     }) => {
       const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
       const tax = subtotal * ((taxPercent ?? 0) / 100);
@@ -74,7 +85,7 @@ export const useCreateInvoice = () => {
       const { data: invoice, error: invErr } = await supabase
         .from("invoices")
         .insert({
-          user_id: userId,
+          user_id: userId ?? null,
           order_id: orderId ?? null,
           amount: subtotal,
           tax_amount: tax,
@@ -82,7 +93,10 @@ export const useCreateInvoice = () => {
           due_date: dueDate ?? null,
           notes: notes ?? "",
           status: "draft",
-        })
+          billing_name: billingName ?? null,
+          billing_phone: billingPhone ?? null,
+          billing_address: billingAddress ?? null,
+        } as any)
         .select()
         .single();
       if (invErr) throw invErr;
