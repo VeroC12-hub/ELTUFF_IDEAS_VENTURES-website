@@ -16,17 +16,36 @@
     }
 
     /* ── Print setup ────────────────────────────────────────────────────── */
-    @page { size: A4 portrait; margin: 0; }
+    /* Page margins match the letterhead safe zone exactly */
+    @page { size: A4 portrait; margin: 46mm 18mm 42mm 18mm; }
 
     @media print {
       body { background: white; }
-      .page { margin: 0; box-shadow: none; }
-      .page { page-break-after: always; }
-      .page:last-child { page-break-after: auto; }
+      /* Letterhead repeats on every printed page via fixed pseudo-element */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 210mm; height: 297mm;
+        background-image: url('letterhead.png');
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        z-index: -1;
+      }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        background-image: none !important;
+        padding: 0 !important;
+        min-height: unset;
+        page-break-before: always;
+      }
+      .page:first-child { page-break-before: auto; }
       .no-print { display: none !important; }
+      .pg-num { display: none; }
     }
 
-    /* ── Page shell ─────────────────────────────────────────────────────── */
+    /* ── Page shell (screen preview only) ───────────────────────────────── */
     .page {
       width: 210mm;
       min-height: 297mm;
@@ -36,28 +55,24 @@
       background-repeat: no-repeat;
       margin: 0 auto 14px auto;
       box-shadow: 0 2px 12px rgba(0,0,0,.22);
-      overflow: hidden;
+      /* padding creates the safe zone — NO overflow:hidden, content is never clipped */
+      padding: 46mm 18mm 42mm 18mm;
     }
 
-    /* ── Content safe zone (avoids letterhead header + footer) ──────────── */
-    .content {
-      position: absolute;
-      top: 46mm;
-      left: 18mm;
-      right: 18mm;
-      /* use height instead of bottom so overflow:hidden clips reliably */
-      height: calc(297mm - 46mm - 42mm);
-      overflow: hidden;
-    }
+    /* ── Content div is now just a flow wrapper ──────────────────────────── */
+    .content { /* no special positioning needed */ }
 
-    /* ── Cover page content centred ─────────────────────────────────────── */
+    /* ── Cover page centres its content ─────────────────────────────────── */
+    .page.cover {
+      padding-top: 55mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .page.cover .content {
-      top: 55mm;
-      height: calc(297mm - 55mm - 42mm);
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       text-align: center;
     }
 
@@ -254,9 +269,9 @@
 
     /* ── Page number ─────────────────────────────────────────────────────── */
     .pg-num {
-      position: absolute;
-      bottom: 35mm;
-      right: 18mm;
+      display: block;
+      text-align: right;
+      margin-top: 4mm;
       font-size: 7.5pt;
       color: #888;
     }
