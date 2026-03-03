@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, startTransition } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -252,11 +252,11 @@ function PurchasesBook() {
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const openCreate = () => { setForm(empty); setEditId(null); setOpen(true); };
-  const openEdit = (p: any) => {
+  const openCreate = () => startTransition(() => { setForm(empty); setEditId(null); setOpen(true); });
+  const openEdit = (p: any) => startTransition(() => {
     setForm({ date: p.date, supplier: p.supplier, item: p.item, quantity: String(p.quantity), unit: p.unit ?? "", unit_cost: String(p.unit_cost), account_id: p.account_id ?? "", reference: p.reference ?? "", notes: p.notes ?? "" });
     setEditId(p.id); setOpen(true);
-  };
+  });
 
   const handleSave = async () => {
     if (!form.supplier || !form.item || !form.quantity || !form.unit_cost) {
@@ -458,11 +458,11 @@ function CreditorsBook() {
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const openCreate = () => { setForm(empty); setEditId(null); setOpen(true); };
-  const openEdit = (c: any) => {
+  const openCreate = () => startTransition(() => { setForm(empty); setEditId(null); setOpen(true); });
+  const openEdit = (c: any) => startTransition(() => {
     setForm({ supplier_name: c.supplier_name, date: c.date, description: c.description, amount_owed: String(c.amount_owed), amount_paid: String(c.amount_paid), due_date: c.due_date ?? "", status: c.status, notes: c.notes ?? "" });
     setEditId(c.id); setOpen(true);
-  };
+  });
 
   const handleSave = async () => {
     if (!form.supplier_name || !form.description || !form.amount_owed) {
@@ -677,11 +677,11 @@ function PayrollBook() {
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const openCreate = () => { setForm(empty); setEditId(null); setOpen(true); };
-  const openEdit = (e: any) => {
+  const openCreate = () => startTransition(() => { setForm(empty); setEditId(null); setOpen(true); });
+  const openEdit = (e: any) => startTransition(() => {
     setForm({ period_month: String(e.period_month), period_year: String(e.period_year), employee_name: e.employee_name, staff_member_id: e.staff_member_id ?? "", basic_salary: String(e.basic_salary), overtime: String(e.overtime), deductions: String(e.deductions), payment_date: e.payment_date ?? "", account_id: e.account_id ?? "", notes: e.notes ?? "" });
     setEditId(e.id); setOpen(true);
-  };
+  });
 
   const handleSave = async () => {
     if (!form.employee_name || !form.basic_salary) {

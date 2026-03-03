@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, startTransition } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,8 +43,8 @@ export default function TeamPage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
 
-  const openCreate = () => { setForm(emptyForm); setEditId(null); setOpen(true); };
-  const openEdit   = (s: any) => {
+  const openCreate = () => startTransition(() => { setForm(emptyForm); setEditId(null); setOpen(true); });
+  const openEdit   = (s: any) => startTransition(() => {
     setForm({
       full_name:    s.full_name,
       phone:        s.phone,
@@ -57,7 +57,7 @@ export default function TeamPage() {
     });
     setEditId(s.id);
     setOpen(true);
-  };
+  });
 
   const handleSave = async () => {
     if (!form.full_name.trim() || !form.phone.trim()) {
