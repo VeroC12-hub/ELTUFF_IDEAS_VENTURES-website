@@ -29,7 +29,7 @@ const emptyForm: FormData = {
   supplier: "", image_url: "", notes: "", is_active: true,
 };
 
-export import navGroups from "@/lib/staffNavGroups";
+import navGroups from "@/lib/staffNavGroups";
 
 const ALL_TYPES: ("all" | ItemType)[] = ["all", "bottle", "label", "cap", "pump", "sachet", "other"];
 
