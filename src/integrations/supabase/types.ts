@@ -722,6 +722,299 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_clients: {
+        Row: {
+          id:           string
+          full_name:    string
+          phone:        string
+          email:        string | null
+          company_name: string | null
+          address:      string | null
+          client_tier:  string
+          notes:        string | null
+          is_active:    boolean
+          created_by:   string | null
+          created_at:   string
+          updated_at:   string
+        }
+        Insert: {
+          id?:           string
+          full_name:     string
+          phone:         string
+          email?:        string | null
+          company_name?: string | null
+          address?:      string | null
+          client_tier?:  string
+          notes?:        string | null
+          is_active?:    boolean
+          created_by?:   string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Update: {
+          id?:           string
+          full_name?:    string
+          phone?:        string
+          email?:        string | null
+          company_name?: string | null
+          address?:      string | null
+          client_tier?:  string
+          notes?:        string | null
+          is_active?:    boolean
+          created_by?:   string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Relationships: []
+      }
+      staff_members: {
+        Row: {
+          id:           string
+          full_name:    string
+          phone:        string
+          email:        string | null
+          position:     string | null
+          department:   string | null
+          basic_salary: number
+          hire_date:    string | null
+          is_active:    boolean
+          notes:        string | null
+          created_by:   string | null
+          created_at:   string
+          updated_at:   string
+        }
+        Insert: {
+          id?:           string
+          full_name:     string
+          phone:         string
+          email?:        string | null
+          position?:     string | null
+          department?:   string | null
+          basic_salary?: number
+          hire_date?:    string | null
+          is_active?:    boolean
+          notes?:        string | null
+          created_by?:   string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Update: {
+          id?:           string
+          full_name?:    string
+          phone?:        string
+          email?:        string | null
+          position?:     string | null
+          department?:   string | null
+          basic_salary?: number
+          hire_date?:    string | null
+          is_active?:    boolean
+          notes?:        string | null
+          created_by?:   string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          id:         string
+          date:       string
+          supplier:   string
+          item:       string
+          quantity:   number
+          unit:       string | null
+          unit_cost:  number
+          total_cost: number
+          account_id: string | null
+          reference:  string | null
+          notes:      string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?:         string
+          date?:       string
+          supplier:    string
+          item:        string
+          quantity:    number
+          unit?:       string | null
+          unit_cost:   number
+          account_id?: string | null
+          reference?:  string | null
+          notes?:      string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?:         string
+          date?:       string
+          supplier?:   string
+          item?:       string
+          quantity?:   number
+          unit?:       string | null
+          unit_cost?:  number
+          account_id?: string | null
+          reference?:  string | null
+          notes?:      string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creditors: {
+        Row: {
+          id:            string
+          supplier_name: string
+          date:          string
+          description:   string
+          amount_owed:   number
+          amount_paid:   number
+          due_date:      string | null
+          status:        string
+          notes:         string | null
+          created_by:    string | null
+          created_at:    string
+          updated_at:    string
+        }
+        Insert: {
+          id?:            string
+          supplier_name:  string
+          date?:          string
+          description:    string
+          amount_owed:    number
+          amount_paid?:   number
+          due_date?:      string | null
+          status?:        string
+          notes?:         string | null
+          created_by?:    string | null
+          created_at?:    string
+          updated_at?:    string
+        }
+        Update: {
+          id?:            string
+          supplier_name?: string
+          date?:          string
+          description?:   string
+          amount_owed?:   number
+          amount_paid?:   number
+          due_date?:      string | null
+          status?:        string
+          notes?:         string | null
+          created_by?:    string | null
+          created_at?:    string
+          updated_at?:    string
+        }
+        Relationships: []
+      }
+      payroll: {
+        Row: {
+          id:              string
+          period_month:    number
+          period_year:     number
+          employee_name:   string
+          staff_member_id: string | null
+          basic_salary:    number
+          overtime:        number
+          deductions:      number
+          net_pay:         number
+          payment_date:    string | null
+          account_id:      string | null
+          notes:           string | null
+          created_by:      string | null
+          created_at:      string
+          updated_at:      string
+        }
+        Insert: {
+          id?:              string
+          period_month:     number
+          period_year:      number
+          employee_name:    string
+          staff_member_id?: string | null
+          basic_salary?:    number
+          overtime?:        number
+          deductions?:      number
+          payment_date?:    string | null
+          account_id?:      string | null
+          notes?:           string | null
+          created_by?:      string | null
+          created_at?:      string
+          updated_at?:      string
+        }
+        Update: {
+          id?:              string
+          period_month?:    number
+          period_year?:     number
+          employee_name?:   string
+          staff_member_id?: string | null
+          basic_salary?:    number
+          overtime?:        number
+          deductions?:      number
+          payment_date?:    string | null
+          account_id?:      string | null
+          notes?:           string | null
+          created_by?:      string | null
+          created_at?:      string
+          updated_at?:      string
+        }
+        Relationships: []
+      }
+      production_batches: {
+        Row: {
+          id:                 string
+          batch_number:       string
+          production_date:    string
+          product_name:       string
+          product_id:         string | null
+          recipe_id:          string | null
+          quantity_produced:  number
+          unit:               string | null
+          raw_materials_used: Json | null
+          supervisor:         string | null
+          status:             string
+          notes:              string | null
+          created_by:         string | null
+          created_at:         string
+          updated_at:         string
+        }
+        Insert: {
+          id?:                 string
+          batch_number:        string
+          production_date?:    string
+          product_name:        string
+          product_id?:         string | null
+          recipe_id?:          string | null
+          quantity_produced:   number
+          unit?:               string | null
+          raw_materials_used?: Json | null
+          supervisor?:         string | null
+          status?:             string
+          notes?:              string | null
+          created_by?:         string | null
+          created_at?:         string
+          updated_at?:         string
+        }
+        Update: {
+          id?:                 string
+          batch_number?:       string
+          production_date?:    string
+          product_name?:       string
+          product_id?:         string | null
+          recipe_id?:          string | null
+          quantity_produced?:  number
+          unit?:               string | null
+          raw_materials_used?: Json | null
+          supervisor?:         string | null
+          status?:             string
+          notes?:              string | null
+          created_by?:         string | null
+          created_at?:         string
+          updated_at?:         string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

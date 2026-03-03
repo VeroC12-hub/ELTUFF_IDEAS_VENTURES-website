@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useClients, useUpdateClientTier, ClientProfile, ClientTier } from "@/hooks/useClients";
+import { useCreateManualClient, useUpdateManualClient } from "@/hooks/useManualClients";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard , FlaskConical, BookOpen, Calculator } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, ShoppingCart, DollarSign, LayoutDashboard, Package, PackageOpen, Warehouse, Users, Receipt, ClipboardList, BarChart3, Settings, UserPlus, CreditCard, FlaskConical, BookOpen, Calculator, Plus, Loader2, BookMarked } from "lucide-react";
 import { format } from "date-fns";
 import { loadTierNames, saveTierNames } from "@/pages/staff/SettingsPage";
 import { Button } from "@/components/ui/button";
@@ -21,20 +22,49 @@ const navGroups = [
   { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
   { label: "Sales", items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
   { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
-  { label: "Production",  items: [{ title: "Materials",  url: "/staff/production/materials",  icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }] },
-  { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
+  { label: "Production", items: [{ title: "Materials", url: "/staff/production/materials", icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }, { title: "Batch Records", url: "/staff/production/batches", icon: ClipboardList }] },
+  { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Accounting Books", url: "/staff/accounting-books", icon: BookMarked }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
   { label: "System", items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
 ];
+
+const emptyClientForm = { full_name: "", phone: "", email: "", company_name: "", address: "", client_tier: "retail", notes: "" };
 
 export default function ClientsPage() {
   const { data: clients = [], isLoading } = useClients();
   const updateTier = useUpdateClientTier();
+  const createManual = useCreateManualClient();
+  const updateManual = useUpdateManualClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ClientProfile | null>(null);
   const [tierNames, setTierNames] = useState(loadTierNames);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameForm, setRenameForm] = useState({ retail: "", wholesale: "", distributor: "" });
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState(emptyClientForm);
+  const [addSaving, setAddSaving] = useState(false);
+
+  const handleAddClient = async () => {
+    if (!addForm.full_name.trim() || !addForm.phone.trim()) {
+      toast({ title: "Full name and phone are required", variant: "destructive" }); return;
+    }
+    setAddSaving(true);
+    try {
+      await createManual.mutateAsync({
+        full_name:    addForm.full_name.trim(),
+        phone:        addForm.phone.trim(),
+        email:        addForm.email.trim() || null,
+        company_name: addForm.company_name.trim() || null,
+        address:      addForm.address.trim() || null,
+        client_tier:  addForm.client_tier,
+        notes:        addForm.notes.trim() || null,
+      });
+      toast({ title: "Client added successfully" });
+      setAddOpen(false);
+      setAddForm(emptyClientForm);
+    } catch { toast({ title: "Error adding client", variant: "destructive" }); }
+    finally { setAddSaving(false); }
+  };
 
   const openRename = () => {
     setRenameForm({ retail: tierNames.retail, wholesale: tierNames.wholesale, distributor: tierNames.distributor });
@@ -54,6 +84,17 @@ export default function ClientsPage() {
   };
 
   const handleTierChange = (client: ClientProfile, tier: ClientTier) => {
+    const isManual = (client as any).source === "manual";
+    if (isManual) {
+      updateManual.mutate({ id: client.id, client_tier: tier } as any, {
+        onSuccess: () => {
+          toast({ title: "Tier updated", description: `${client.full_name} → ${TIER_LABELS[tier]}` });
+          if (selected?.id === client.id) setSelected({ ...selected, ...{ client_tier: tier } as any });
+        },
+        onError: () => toast({ title: "Failed to update tier", variant: "destructive" }),
+      });
+      return;
+    }
     updateTier.mutate({ userId: client.user_id, tier }, {
       onSuccess: () => {
         toast({ title: "Tier updated", description: `${client.full_name || client.email} → ${TIER_LABELS[tier]}` });
@@ -78,11 +119,16 @@ export default function ClientsPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold">Clients</h1>
-            <p className="text-muted-foreground text-sm">{clients.length} registered client{clients.length !== 1 ? "s" : ""}</p>
+            <p className="text-muted-foreground text-sm">{clients.length} client{clients.length !== 1 ? "s" : ""}</p>
           </div>
-          <Button size="sm" variant="outline" className="flex items-center gap-1.5 text-xs" onClick={openRename}>
-            <Pencil className="h-3 w-3" /> Rename Tiers
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => { setAddForm(emptyClientForm); setAddOpen(true); }} className="gap-1.5">
+              <Plus className="h-4 w-4" /> Add Client
+            </Button>
+            <Button size="sm" variant="outline" className="flex items-center gap-1.5 text-xs" onClick={openRename}>
+              <Pencil className="h-3 w-3" /> Rename Tiers
+            </Button>
+          </div>
         </div>
 
         <Input
@@ -132,8 +178,13 @@ export default function ClientsPage() {
                           {initials(c.full_name || c.email)}
                         </div>
                         <div>
-                          <p className="font-medium">{c.full_name || "—"}</p>
-                          <p className="text-xs text-muted-foreground">{c.email}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium">{c.full_name || "—"}</p>
+                            {(c as any).source === "manual" && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">Manual</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{c.email || c.phone}</p>
                         </div>
                       </div>
                     </td>
@@ -258,6 +309,56 @@ export default function ClientsPage() {
           )}
         </DialogContent>
       </Dialog>
+      {/* Add Manual Client Dialog */}
+      <Dialog open={addOpen} onOpenChange={o => !o && setAddOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Client Manually</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Phone number is required. Email is optional — use this for clients who don't have email addresses.
+            </p>
+            {[
+              { label: "Full Name *",       key: "full_name",    type: "text",  placeholder: "Client full name" },
+              { label: "Phone *",           key: "phone",        type: "tel",   placeholder: "e.g. 0244000000" },
+              { label: "Email (optional)",  key: "email",        type: "email", placeholder: "Optional" },
+              { label: "Company Name",      key: "company_name", type: "text",  placeholder: "Optional" },
+              { label: "Address",           key: "address",      type: "text",  placeholder: "Optional" },
+              { label: "Notes",             key: "notes",        type: "text",  placeholder: "Optional notes" },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
+                <Input
+                  type={f.type}
+                  placeholder={f.placeholder}
+                  value={(addForm as any)[f.key]}
+                  onChange={e => setAddForm(v => ({ ...v, [f.key]: e.target.value }))}
+                  className="mt-1 h-9"
+                />
+              </div>
+            ))}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Pricing Tier</label>
+              <Select value={addForm.client_tier} onValueChange={v => setAddForm(f => ({ ...f, client_tier: v }))}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="retail">{tierNames.retail}</SelectItem>
+                  <SelectItem value="wholesale">{tierNames.wholesale}</SelectItem>
+                  <SelectItem value="distributor">{tierNames.distributor}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1" onClick={handleAddClient} disabled={addSaving}>
+                {addSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Add Client
+              </Button>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Rename Tiers Dialog */}
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className="max-w-sm">

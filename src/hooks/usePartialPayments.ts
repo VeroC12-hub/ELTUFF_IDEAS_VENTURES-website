@@ -29,6 +29,19 @@ export interface NewPartialPayment {
   created_by?: string;
 }
 
+export const useAllPartialPayments = () =>
+  useQuery({
+    queryKey: ["partial_payments", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partial_payments" as any)
+        .select("*, invoices(invoice_number)")
+        .order("received_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as (PartialPayment & { invoices?: { invoice_number: string } | null })[];
+    },
+  });
+
 export const usePartialPayments = (invoiceId: string | null) =>
   useQuery({
     queryKey: ["partial_payments", invoiceId],

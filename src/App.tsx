@@ -27,6 +27,9 @@ import AccountsPage from "./pages/staff/AccountsPage";
 import MaterialsPage from "./pages/staff/production/MaterialsPage";
 import RecipesPage from "./pages/staff/production/RecipesPage";
 import CalculatorPage from "./pages/staff/production/CalculatorPage";
+import BatchesPage from "./pages/staff/production/BatchesPage";
+import AccountingBooksPage from "./pages/staff/AccountingBooksPage";
+import TeamPage from "./pages/staff/TeamPage";
 import ClientReportsPage from "./pages/client/ReportsPage";
 import ClientSettingsPage from "./pages/client/SettingsPage";
 
@@ -193,6 +196,30 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <CalculatorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/production/batches"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <BatchesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/accounting-books"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <AccountingBooksPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/team"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <TeamPage />
                 </ProtectedRoute>
               }
             />

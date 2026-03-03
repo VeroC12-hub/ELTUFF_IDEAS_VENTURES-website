@@ -7,13 +7,23 @@ export type ClientTier = "retail" | "wholesale" | "distributor";
 export type ClientProfile = Tables<"profiles"> & {
   order_count?: number;
   total_spent?: number;
+  source?: "auth" | "manual";
+};
+
+export type ManualClientProfile = Tables<"manual_clients"> & {
+  order_count?: number;
+  total_spent?: number;
+  source?: "manual";
+  // Map manual_clients fields to match ClientProfile shape
+  user_id?: string;
+  avatar_url?: string | null;
 };
 
 export const useClients = () =>
   useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      // Get all client-role user IDs
+      // 1. Auth-based clients
       const { data: roles, error: rolesErr } = await supabase
         .from("user_roles")
         .select("user_id")
@@ -21,28 +31,54 @@ export const useClients = () =>
       if (rolesErr) throw rolesErr;
 
       const userIds = (roles ?? []).map((r) => r.user_id);
-      if (userIds.length === 0) return [];
+      let authClients: ClientProfile[] = [];
 
-      const { data: profiles, error: profErr } = await supabase
-        .from("profiles")
+      if (userIds.length > 0) {
+        const { data: profiles, error: profErr } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("user_id", userIds)
+          .order("created_at", { ascending: false });
+        if (profErr) throw profErr;
+
+        authClients = await Promise.all(
+          (profiles ?? []).map(async (p) => {
+            const { data: orders } = await supabase
+              .from("orders")
+              .select("total_amount")
+              .eq("user_id", p.user_id);
+            const order_count = orders?.length ?? 0;
+            const total_spent = orders?.reduce((s, o) => s + o.total_amount, 0) ?? 0;
+            return { ...p, order_count, total_spent, source: "auth" as const };
+          })
+        );
+      }
+
+      // 2. Manual clients
+      const { data: manualData } = await supabase
+        .from("manual_clients")
         .select("*")
-        .in("user_id", userIds)
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
-      if (profErr) throw profErr;
 
-      // Attach order stats
-      const withStats = await Promise.all(
-        (profiles ?? []).map(async (p) => {
-          const { data: orders } = await supabase
-            .from("orders")
-            .select("total_amount")
-            .eq("user_id", p.user_id);
-          const order_count = orders?.length ?? 0;
-          const total_spent = orders?.reduce((s, o) => s + o.total_amount, 0) ?? 0;
-          return { ...p, order_count, total_spent };
-        })
-      );
-      return withStats as ClientProfile[];
+      const manualClients: ClientProfile[] = (manualData ?? []).map((m) => ({
+        id:           m.id,
+        user_id:      m.id,           // use own id as placeholder
+        full_name:    m.full_name,
+        email:        m.email ?? "",
+        phone:        m.phone,
+        company_name: m.company_name ?? null,
+        address:      m.address ?? null,
+        avatar_url:   null,
+        client_tier:  m.client_tier,
+        created_at:   m.created_at,
+        updated_at:   m.updated_at,
+        order_count:  0,
+        total_spent:  0,
+        source:       "manual" as const,
+      } as any));
+
+      return [...authClients, ...manualClients] as ClientProfile[];
     },
   });
 
