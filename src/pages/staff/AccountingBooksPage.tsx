@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,24 +15,19 @@ import { useCreditors, useCreateCreditor, useUpdateCreditor, useDeleteCreditor }
 import { usePayroll, useCreatePayrollEntry, useUpdatePayrollEntry, useDeletePayrollEntry, MONTH_NAMES } from "@/hooks/usePayroll";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import { format } from "date-fns";
-import {
-  LayoutDashboard, Users, Package, PackageOpen, Receipt, FileText,
-  BarChart3, Settings, DollarSign, ShoppingCart, UserPlus,
-  Warehouse, CreditCard, ClipboardList, FlaskConical, BookOpen,
-  Calculator, Plus, Pencil, Trash2, Loader2, BookMarked,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Info, ExternalLink } from "lucide-react";
 
-const navGroups = [
-  { label: "Overview", items: [{ title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard }] },
-  { label: "Sales", items: [{ title: "Quotes", url: "/staff/quotes", icon: ClipboardList }, { title: "Invoices", url: "/staff/invoices", icon: Receipt }, { title: "Orders", url: "/staff/orders", icon: ShoppingCart }] },
-  { label: "Management", items: [{ title: "Clients", url: "/staff/clients", icon: Users }, { title: "Inventory", url: "/staff/inventory", icon: Warehouse }, { title: "Products", url: "/staff/products", icon: Package }, { title: "Bottles & Labels", url: "/staff/bottles-labels", icon: PackageOpen }] },
-  { label: "Production", items: [{ title: "Materials", url: "/staff/production/materials", icon: FlaskConical }, { title: "Recipes", url: "/staff/production/recipes", icon: BookOpen }, { title: "Calculator", url: "/staff/production/calculator", icon: Calculator }, { title: "Batch Records", url: "/staff/production/batches", icon: ClipboardList }] },
-  { label: "Finance", items: [{ title: "Accounts", url: "/staff/accounts", icon: CreditCard }, { title: "Accounting Books", url: "/staff/accounting-books", icon: BookMarked }, { title: "Reports", url: "/staff/reports", icon: BarChart3 }] },
-  { label: "System", items: [{ title: "Team", url: "/staff/team", icon: UserPlus }, { title: "Settings", url: "/staff/settings", icon: Settings }] },
-];
+import navGroups from "@/lib/staffNavGroups";
 
 // ── Shared helpers ──────────────────────────────────────────────────────────
 const GHS = (n: number) => `₵ ${n.toFixed(2)}`;
+
+const InfoBanner = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+    <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+    <span>{children}</span>
+  </div>
+);
 const fmtDate = (d: string) => { try { return format(new Date(d), "dd/MM/yyyy"); } catch { return d; } };
 
 const EmptyRow = ({ cols, msg }: { cols: number; msg: string }) => (
@@ -123,6 +119,11 @@ function CashBankBook({ accountType }: { accountType: "cash" | "bank" }) {
 
   return (
     <div className="space-y-4">
+      <InfoBanner>
+        This book is updated <strong>automatically</strong>. Money In comes from payments recorded on invoices (cash / bank transfer). Money Out comes from expenses added in{" "}
+        <Link to="/staff/accounts" className="underline font-semibold">Finance → Accounts</Link>.
+        To add a new entry, record a payment on an invoice or add an expense there.
+      </InfoBanner>
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Money In",  value: GHS(totalIn),  color: "text-success" },
@@ -185,6 +186,10 @@ function SalesBook() {
 
   return (
     <div className="space-y-4">
+      <InfoBanner>
+        This book is updated <strong>automatically</strong> from your invoices. To add a new sales entry, create an invoice in{" "}
+        <Link to="/staff/invoices" className="underline font-semibold">Sales → Invoices</Link>.
+      </InfoBanner>
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Invoices", value: String(invoices.length), color: "" },
@@ -353,19 +358,18 @@ function PurchasesBook() {
             ))}
             <div>
               <label className="text-xs font-medium text-muted-foreground">Paid from Account</label>
-              <Select value={form.account_id} onValueChange={v => setForm(f => ({ ...f, account_id: v }))}>
+              <Select value={form.account_id || undefined} onValueChange={v => setForm(f => ({ ...f, account_id: v }))}>
                 <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select account (optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1" onClick={handleSave} disabled={saving}>
+              <Button type="button" className="flex-1" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Save
               </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             </div>
           </div>
         </DialogContent>
@@ -383,6 +387,10 @@ function DebtorsBook() {
 
   return (
     <div className="space-y-4">
+      <InfoBanner>
+        This book is updated <strong>automatically</strong> from unpaid invoices. To mark a customer as paid, open their invoice in{" "}
+        <Link to="/staff/invoices" className="underline font-semibold">Sales → Invoices</Link> and record the payment.
+      </InfoBanner>
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Debtors", value: String(debtors.length), color: "" },
@@ -568,10 +576,10 @@ function CreditorsBook() {
               </Select>
             </div>
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1" onClick={handleSave} disabled={saving}>
+              <Button type="button" className="flex-1" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Save
               </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             </div>
           </div>
         </DialogContent>
@@ -594,6 +602,17 @@ function ExpenseBook() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <InfoBanner>
+          This book is updated <strong>automatically</strong> when expenses are added in Finance → Accounts.
+          Click the button on the right to go there and add a new expense.
+        </InfoBanner>
+        <Link to="/staff/accounts">
+          <Button type="button" size="sm" variant="outline" className="gap-1.5 whitespace-nowrap">
+            <ExternalLink className="h-3.5 w-3.5" /> Go to Finance → Accounts
+          </Button>
+        </Link>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-card border border-border rounded-xl p-4">
           <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
@@ -803,10 +822,9 @@ function PayrollBook() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Paid from Account</label>
-              <Select value={form.account_id} onValueChange={v => setForm(f => ({ ...f, account_id: v }))}>
-                <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select account" /></SelectTrigger>
+              <Select value={form.account_id || undefined} onValueChange={v => setForm(f => ({ ...f, account_id: v }))}>
+                <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select account (optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -816,10 +834,10 @@ function PayrollBook() {
               <Input placeholder="Optional" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="mt-1 h-9" />
             </div>
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1" onClick={handleSave} disabled={saving}>
+              <Button type="button" className="flex-1" onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Save
               </Button>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             </div>
           </div>
         </DialogContent>
