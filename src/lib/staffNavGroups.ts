@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, Package, PackageOpen, Receipt,
   BarChart3, Settings, ShoppingCart, UserPlus, Warehouse,
   CreditCard, ClipboardList, FlaskConical, BookOpen,
-  Calculator, BookMarked,
+  Calculator, BookMarked, KeyRound,
 } from "lucide-react";
 
 const staffNavGroups = [
@@ -47,8 +47,9 @@ const staffNavGroups = [
   {
     label: "System",
     items: [
-      { title: "Team",     url: "/staff/team",     icon: UserPlus },
-      { title: "Settings", url: "/staff/settings", icon: Settings },
+      { title: "Team",           url: "/staff/team",         icon: UserPlus },
+      { title: "Login Accounts", url: "/staff/user-logins",  icon: KeyRound },
+      { title: "Settings",       url: "/staff/settings",     icon: Settings },
     ],
   },
 ];

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { identifierToAuthEmail, isEmailIdentifier } from "@/lib/phone";
 
 type AppRole = "admin" | "staff" | "client";
 
@@ -16,8 +16,9 @@ interface AuthContextType {
     phone: string;
   } | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  // identifier may be an email address OR a phone number (phone logins are
+  // keyed to a synthetic email under the hood — see src/lib/phone.ts).
+  signIn: (identifier: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -73,21 +74,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (identifier: string, password: string) => {
+    const email = identifierToAuthEmail(identifier);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
-  };
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error: error?.message ?? null };
+    if (error) {
+      // Give a clearer hint for phone logins, whose synthetic email the user
+      // never sees.
+      const friendly =
+        error.message === "Invalid login credentials" && !isEmailIdentifier(identifier)
+          ? "Invalid phone number or password"
+          : error.message;
+      return { error: friendly };
+    }
+    return { error: null };
   };
 
   const signOut = async () => {
@@ -97,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, role, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

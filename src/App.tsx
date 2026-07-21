@@ -30,6 +30,7 @@ import CalculatorPage from "./pages/staff/production/CalculatorPage";
 import BatchesPage from "./pages/staff/production/BatchesPage";
 import AccountingBooksPage from "./pages/staff/AccountingBooksPage";
 import TeamPage from "./pages/staff/TeamPage";
+import UserLoginsPage from "./pages/staff/UserLoginsPage";
 import ClientReportsPage from "./pages/client/ReportsPage";
 import ClientSettingsPage from "./pages/client/SettingsPage";
 
@@ -220,6 +221,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <TeamPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff/user-logins"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <UserLoginsPage />
                 </ProtectedRoute>
               }
             />
