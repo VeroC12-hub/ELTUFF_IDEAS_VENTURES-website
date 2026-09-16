@@ -12,13 +12,13 @@ import retailNavGroups from "@/lib/retailNavGroups";
 import { ExternalLink, Barcode, Pencil, Plus } from "lucide-react";
 
 type FormData = {
-  name: string; sku: string; cost_price: string;
+  name: string; sku: string; size: string; cost_price: string;
   price_retail: string; price_wholesale: string;
   stock_quantity: string; unit: string;
 };
 
 const emptyForm: FormData = {
-  name: "", sku: "", cost_price: "",
+  name: "", sku: "", size: "", cost_price: "",
   price_retail: "", price_wholesale: "",
   stock_quantity: "0", unit: "unit",
 };
@@ -67,6 +67,7 @@ export default function RetailProductsPage() {
     setForm({
       name: p.name,
       sku: p.sku ?? "",
+      size: (p as any).size ?? "",
       cost_price: (p as any).cost_price != null ? String((p as any).cost_price) : "",
       price_retail: (p as any).price_retail != null ? String((p as any).price_retail) : String(p.price),
       price_wholesale: (p as any).price_wholesale != null ? String((p as any).price_wholesale) : "",
@@ -102,6 +103,7 @@ export default function RetailProductsPage() {
     const payload = {
       name: form.name.trim(),
       sku: form.sku || null,
+      size: form.size || null,
       price: parseFloat(form.price_retail),
       cost_price: form.cost_price ? parseFloat(form.cost_price) : null,
       price_retail: parseFloat(form.price_retail),
@@ -185,7 +187,7 @@ export default function RetailProductsPage() {
                   return (
                     <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="p-3">
-                        <p className="font-medium">{p.name}</p>
+                        <p className="font-medium">{p.name}{(p as any).size ? ` (${(p as any).size})` : ""}</p>
                         {p.sku && <p className="text-xs text-muted-foreground">{p.sku}</p>}
                       </td>
                       <td className="p-3 text-muted-foreground">{cost != null ? `₵ ${cost.toFixed(2)}` : "—"}</td>
@@ -228,6 +230,10 @@ export default function RetailProductsPage() {
             <div className="space-y-1">
               <Label>SKU / Barcode</Label>
               <Input value={form.sku} onChange={e => set("sku", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Size / Variant</Label>
+              <Input value={form.size} onChange={e => set("size", e.target.value)} placeholder="e.g. 250ml, 500g, 1L" />
             </div>
             <div className="space-y-1">
               <Label>Unit</Label>
