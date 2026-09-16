@@ -1,3 +1,5 @@
+import logoUrl from "@/assets/logo.png";
+
 const COMPANY_KEY = "eltuff_company_settings";
 
 interface CompanySettings {
@@ -14,6 +16,16 @@ function loadCo(): CompanySettings {
   catch { return defaultCo; }
 }
 
+async function toBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export interface PrintableReceipt {
   invoice_number: string;
   created_at: string;
@@ -24,8 +36,9 @@ export interface PrintableReceipt {
   invoice_items?: Array<{ description: string; quantity: number; unit_price: number; total_price: number }> | null;
 }
 
-export function printReceipt(receipt: PrintableReceipt): void {
+export async function printReceipt(receipt: PrintableReceipt): Promise<void> {
   const co = loadCo();
+  const logoB64 = await toBase64(logoUrl);
   const items = receipt.invoice_items ?? [];
   const date = new Date(receipt.created_at).toLocaleString("en-GB");
 
@@ -44,6 +57,7 @@ export function printReceipt(receipt: PrintableReceipt): void {
   @page{size:80mm auto;margin:0}
   body{font-family:"Courier New",monospace;width:80mm;padding:4mm;font-size:10pt}
   .center{text-align:center}
+  .logo{height:14mm;width:auto;margin:0 auto 2mm}
   .co-name{font-weight:900;font-size:12pt;text-transform:uppercase}
   .co-sub{font-size:8pt;color:#333}
   .divider{border-top:1px dashed #000;margin:2mm 0}
@@ -59,6 +73,7 @@ export function printReceipt(receipt: PrintableReceipt): void {
 </head>
 <body>
   <div class="center">
+    <img class="logo" src="${logoB64}" alt="Logo" />
     <div class="co-name">${co.name}</div>
     <div class="co-sub">${co.tagline}</div>
     <div class="co-sub">${co.address}</div>
@@ -77,11 +92,34 @@ export function printReceipt(receipt: PrintableReceipt): void {
   <div class="meta">Paid by: ${(receipt.payment_method ?? "cash").toUpperCase()}</div>
   ${receipt.payment_reference ? `<div class="meta">Ref: ${receipt.payment_reference}</div>` : ""}
   <div class="footer center">Thank you for shopping with us!</div>
-<script>
-  window.onload = function(){ setTimeout(function(){ window.print(); }, 200); };
-</script>
 </body></html>`;
 
-  const win = window.open("", "_blank");
-  if (win) { win.document.write(html); win.document.close(); }
+  // Print via a hidden iframe rather than opening a new tab/window, so the
+  // shop's own page never navigates away or loses its place.
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const cleanup = () => {
+    setTimeout(() => iframe.remove(), 500);
+  };
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) { cleanup(); return; }
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.contentWindow?.addEventListener("afterprint", cleanup);
+  setTimeout(() => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+    // Fallback cleanup in case the browser never fires afterprint (some mobile browsers).
+    setTimeout(cleanup, 60000);
+  }, 300);
 }

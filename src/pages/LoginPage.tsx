@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import InstallAppBanner from "@/components/InstallAppBanner";
 import logo from "@/assets/logo.png";
 
 const LoginPage = () => {
@@ -29,7 +30,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col">
+      <InstallAppBanner />
+      <div className="flex flex-1">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 gradient-hero relative items-center justify-center p-12">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_30%,hsl(38,92%,50%),transparent_50%)]" />
@@ -108,6 +111,7 @@ const LoginPage = () => {
             Need an account? Eltuff staff set up your login — please contact the office.
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
