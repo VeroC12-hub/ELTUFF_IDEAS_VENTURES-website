@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAllProducts, useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
 import retailNavGroups from "@/lib/retailNavGroups";
-import { ExternalLink, Barcode, Pencil } from "lucide-react";
+import { ExternalLink, Barcode, Pencil, Plus } from "lucide-react";
 
 type FormData = {
   name: string; sku: string; cost_price: string;
@@ -132,9 +132,14 @@ export default function RetailProductsPage() {
             <h1 className="text-2xl font-display font-bold">Price List</h1>
             <p className="text-muted-foreground text-sm">Cost, retail and wholesale prices for every product</p>
           </div>
-          <Link to="/staff/products" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
-            Manage in Production <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <Button variant="accent" onClick={() => openCreate("")}>
+              <Plus className="h-4 w-4 mr-1" /> New Item
+            </Button>
+            <Link to="/staff/products" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+              Manage in Production <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

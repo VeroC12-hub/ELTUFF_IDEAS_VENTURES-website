@@ -102,7 +102,8 @@ export default function RetailSalePage() {
   const removeItem = (productId: string) => setItems(prev => prev.filter(i => i.product.id !== productId));
 
   const subtotal = items.reduce((sum, i) => sum + unitPrice(i.product, tier) * i.quantity, 0);
-  const discountValue = Math.min(parseFloat(discount) || 0, subtotal);
+  const discountPercent = Math.min(Math.max(parseFloat(discount) || 0, 0), 100);
+  const discountValue = subtotal * (discountPercent / 100);
   const total = subtotal - discountValue;
 
   const handleCompleteSale = async () => {
@@ -125,7 +126,7 @@ export default function RetailSalePage() {
       }));
       if (discountValue > 0) {
         receiptItems.push({
-          description: "Discount",
+          description: `Discount (${discountPercent}%)`,
           quantity: 1,
           unit_price: -discountValue,
           total_price: -discountValue,
@@ -299,8 +300,8 @@ export default function RetailSalePage() {
                 </div>
               )}
               <div className="space-y-1">
-                <Label>Discount (₵)</Label>
-                <Input type="number" min="0" step="0.01" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="0.00" />
+                <Label>Discount (%)</Label>
+                <Input type="number" min="0" max="100" step="1" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="0" />
               </div>
             </div>
 
@@ -316,7 +317,7 @@ export default function RetailSalePage() {
                     <span>₵ {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-destructive">
-                    <span>Discount</span>
+                    <span>Discount ({discountPercent}%)</span>
                     <span>- ₵ {discountValue.toFixed(2)}</span>
                   </div>
                 </>
