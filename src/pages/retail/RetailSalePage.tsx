@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAllProducts, Product } from "@/hooks/useProducts";
 import { useAdjustStock } from "@/hooks/useInventory";
 import { useCreateInvoice } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
-import { Barcode, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Barcode, Minus, Plus, Trash2, ShoppingBag, PauseCircle, PlayCircle, X } from "lucide-react";
 import retailNavGroups from "@/lib/retailNavGroups";
 import { printReceipt } from "@/lib/printReceipt";
 
@@ -19,6 +20,19 @@ interface SaleItem {
   product: Product;
   quantity: number;
 }
+
+interface HeldSale {
+  id: string;
+  heldAt: string;
+  items: SaleItem[];
+  tier: Tier;
+  customerName: string;
+  paymentMethod: string;
+  paymentReference: string;
+  discount: string;
+}
+
+const HELD_SALES_KEY = "eltuff_held_sales";
 
 const unitPrice = (product: Product, tier: Tier) => {
   const tiered = tier === "retail" ? (product as any).price_retail : (product as any).price_wholesale;
@@ -40,7 +54,16 @@ export default function RetailSalePage() {
   const [paymentReference, setPaymentReference] = useState("");
   const [discount, setDiscount] = useState("");
   const [completing, setCompleting] = useState(false);
+  const [heldSales, setHeldSales] = useState<HeldSale[]>(() => {
+    try { return JSON.parse(localStorage.getItem(HELD_SALES_KEY) ?? "[]"); }
+    catch { return []; }
+  });
+  const [showHeld, setShowHeld] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem(HELD_SALES_KEY, JSON.stringify(heldSales));
+  }, [heldSales]);
 
   const active = useMemo(() => products.filter(p => p.is_active), [products]);
 
@@ -100,6 +123,55 @@ export default function RetailSalePage() {
   };
 
   const removeItem = (productId: string) => setItems(prev => prev.filter(i => i.product.id !== productId));
+
+  const clearActiveSale = () => {
+    setItems([]);
+    setCustomerName("");
+    setPaymentMethod("cash");
+    setPaymentReference("");
+    setDiscount("");
+    setTier("retail");
+  };
+
+  const handleHoldSale = () => {
+    if (items.length === 0) {
+      toast({ title: "Nothing to hold", description: "Add items to the sale first.", variant: "destructive" });
+      return;
+    }
+    setHeldSales(prev => [...prev, {
+      id: crypto.randomUUID(),
+      heldAt: new Date().toISOString(),
+      items, tier, customerName, paymentMethod, paymentReference, discount,
+    }]);
+    clearActiveSale();
+    toast({ title: "Sale held", description: "Come back to it anytime from Held Sales." });
+    inputRef.current?.focus();
+  };
+
+  const handleResumeSale = (held: HeldSale) => {
+    if (items.length > 0) {
+      // Don't lose whatever's currently on the counter — park it too.
+      setHeldSales(prev => [...prev.filter(h => h.id !== held.id), {
+        id: crypto.randomUUID(),
+        heldAt: new Date().toISOString(),
+        items, tier, customerName, paymentMethod, paymentReference, discount,
+      }]);
+    } else {
+      setHeldSales(prev => prev.filter(h => h.id !== held.id));
+    }
+    setItems(held.items);
+    setTier(held.tier);
+    setCustomerName(held.customerName);
+    setPaymentMethod(held.paymentMethod);
+    setPaymentReference(held.paymentReference);
+    setDiscount(held.discount);
+    setShowHeld(false);
+    inputRef.current?.focus();
+  };
+
+  const handleDiscardHeldSale = (id: string) => {
+    setHeldSales(prev => prev.filter(h => h.id !== id));
+  };
 
   const subtotal = items.reduce((sum, i) => sum + unitPrice(i.product, tier) * i.quantity, 0);
   const discountPercent = Math.min(Math.max(parseFloat(discount) || 0, 0), 100);
@@ -164,10 +236,7 @@ export default function RetailSalePage() {
         payment_reference: reference || undefined,
         invoice_items: receiptItems,
       });
-      setItems([]);
-      setCustomerName("");
-      setDiscount("");
-      setPaymentReference("");
+      clearActiveSale();
       inputRef.current?.focus();
     } catch (e: unknown) {
       toast({ title: "Sale failed", description: e instanceof Error ? e.message : "Something went wrong", variant: "destructive" });
@@ -179,9 +248,24 @@ export default function RetailSalePage() {
   return (
     <DashboardLayout navGroups={retailNavGroups} portalName="Retail Shop">
       <div className="space-y-5">
-        <div>
-          <h1 className="text-2xl font-display font-bold">New Sale</h1>
-          <p className="text-muted-foreground text-sm">Scan a barcode or search by name/SKU to ring up a sale</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold">New Sale</h1>
+            <p className="text-muted-foreground text-sm">Scan a barcode or search by name/SKU to ring up a sale</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowHeld(true)} className="relative">
+              <PauseCircle className="h-4 w-4 mr-1" /> Held Sales
+              {heldSales.length > 0 && (
+                <span className="ml-2 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
+                  {heldSales.length}
+                </span>
+              )}
+            </Button>
+            <Button variant="outline" onClick={handleHoldSale} disabled={items.length === 0}>
+              <PauseCircle className="h-4 w-4 mr-1" /> Hold This Sale
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -334,6 +418,39 @@ export default function RetailSalePage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showHeld} onOpenChange={setShowHeld}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Held Sales</DialogTitle></DialogHeader>
+          {heldSales.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No sales on hold right now.</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {heldSales.map(h => {
+                const hTotal = h.items.reduce((s, i) => s + unitPrice(i.product, h.tier) * i.quantity, 0);
+                return (
+                  <div key={h.id} className="flex items-center justify-between gap-3 border border-border rounded-lg p-3">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{h.customerName || "Walk-in Customer"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {h.items.reduce((s, i) => s + i.quantity, 0)} items · ₵ {hTotal.toFixed(2)} · held {new Date(h.heldAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button size="sm" variant="accent" onClick={() => handleResumeSale(h)}>
+                        <PlayCircle className="h-3.5 w-3.5 mr-1" /> Resume
+                      </Button>
+                      <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => handleDiscardHeldSale(h.id)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
