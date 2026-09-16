@@ -13,6 +13,12 @@ import ClientDashboard from "./pages/ClientDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import ProductDetail from "./pages/ProductDetail";
 import ProductsPage from "./pages/staff/ProductsPage";
+import RetailDashboard from "./pages/retail/RetailDashboard";
+import RetailSalePage from "./pages/retail/RetailSalePage";
+import RetailReceiptsPage from "./pages/retail/RetailReceiptsPage";
+import RetailCustomersPage from "./pages/retail/RetailCustomersPage";
+import RetailReportsPage from "./pages/retail/RetailReportsPage";
+import RetailProductsPage from "./pages/retail/RetailProductsPage";
 import BottlesLabelsPage from "./pages/staff/BottlesLabelsPage";
 import InventoryPage from "./pages/staff/InventoryPage";
 import ClientsPage from "./pages/staff/ClientsPage";
@@ -100,6 +106,54 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
                   <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/sale"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailSalePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/products"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/receipts"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailReceiptsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/customers"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailCustomersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/reports"
+              element={
+                <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailReportsPage />
                 </ProtectedRoute>
               }
             />

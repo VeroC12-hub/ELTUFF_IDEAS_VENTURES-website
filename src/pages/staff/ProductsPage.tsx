@@ -20,7 +20,7 @@ const SECTIONS = [
 ];
 
 type FormData = {
-  name: string; description: string; price: string; old_price: string;
+  name: string; description: string; cost_price: string; price: string; old_price: string;
   price_retail: string; price_wholesale: string; price_distributor: string;
   size: string; unit: string; sku: string; category_id: string;
   stock_quantity: string; min_stock_level: string; image_url: string;
@@ -28,7 +28,7 @@ type FormData = {
 };
 
 const empty: FormData = {
-  name: "", description: "", price: "", old_price: "",
+  name: "", description: "", cost_price: "", price: "", old_price: "",
   price_retail: "", price_wholesale: "", price_distributor: "",
   size: "", unit: "unit", sku: "", category_id: "",
   stock_quantity: "0", min_stock_level: "0",
@@ -59,7 +59,9 @@ export default function ProductsPage() {
   const openEdit = (p: Product) => {
     setEditing(p);
     setForm({
-      name: p.name, description: p.description ?? "", price: String(p.price),
+      name: p.name, description: p.description ?? "",
+      cost_price: (p as any).cost_price != null ? String((p as any).cost_price) : "",
+      price: String(p.price),
       old_price: p.old_price ? String(p.old_price) : "",
       price_retail: (p as any).price_retail != null ? String((p as any).price_retail) : "",
       price_wholesale: (p as any).price_wholesale != null ? String((p as any).price_wholesale) : "",
@@ -82,6 +84,7 @@ export default function ProductsPage() {
     }
     const payload = {
       name: form.name.trim(), description: form.description,
+      cost_price: form.cost_price ? parseFloat(form.cost_price) : null,
       price: parseFloat(form.price), old_price: form.old_price ? parseFloat(form.old_price) : null,
       price_retail: form.price_retail ? parseFloat(form.price_retail) : null,
       price_wholesale: form.price_wholesale ? parseFloat(form.price_wholesale) : null,
@@ -147,7 +150,9 @@ export default function ProductsPage() {
                 <tr className="border-b border-border bg-muted/50">
                   <th className="text-left p-3 font-medium text-muted-foreground">Product</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Category</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Cost</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Price</th>
+                  <th className="text-left p-3 font-medium text-muted-foreground">Margin</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Stock</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Section</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Tag</th>
@@ -159,13 +164,13 @@ export default function ProductsPage() {
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-border/50">
-                      {[...Array(8)].map((_, j) => (
+                      {[...Array(10)].map((_, j) => (
                         <td key={j} className="p-3"><div className="h-4 bg-secondary/50 rounded animate-pulse" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No products found</td></tr>
+                  <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">No products found</td></tr>
                 ) : filtered.map(p => (
                   <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="p-3">
@@ -178,7 +183,17 @@ export default function ProductsPage() {
                       </div>
                     </td>
                     <td className="p-3 text-muted-foreground">{(p as Product & { categories?: { name: string } | null }).categories?.name ?? "—"}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {(p as any).cost_price != null ? `₵ ${(p as any).cost_price.toFixed(2)}` : "—"}
+                    </td>
                     <td className="p-3 font-medium">₵ {p.price.toFixed(2)}</td>
+                    <td className="p-3">
+                      {(p as any).cost_price != null && p.price > 0 ? (
+                        <span className={((p.price - (p as any).cost_price) / p.price) < 0.15 ? "text-destructive font-semibold" : "text-success font-medium"}>
+                          {(((p.price - (p as any).cost_price) / p.price) * 100).toFixed(0)}%
+                        </span>
+                      ) : "—"}
+                    </td>
                     <td className="p-3">
                       <span className={p.stock_quantity <= p.min_stock_level ? "text-destructive font-semibold" : ""}>
                         {p.stock_quantity} {p.unit}
@@ -231,13 +246,26 @@ export default function ProductsPage() {
                 placeholder="Product description…" />
             </div>
             <div className="space-y-1">
-              <Label>Price (₵) *</Label>
+              <Label>Cost Price (₵)</Label>
+              <Input type="number" min="0" step="0.01" value={form.cost_price} onChange={e => set("cost_price", e.target.value)} placeholder="What you paid / it cost to make" />
+            </div>
+            <div className="space-y-1">
+              <Label>Selling Price (₵) *</Label>
               <Input type="number" min="0" step="0.01" value={form.price} onChange={e => set("price", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Old Price (₵) — for sale badge</Label>
               <Input type="number" min="0" step="0.01" value={form.old_price} onChange={e => set("old_price", e.target.value)} placeholder="Leave blank if no discount" />
             </div>
+            {form.cost_price && form.price && (
+              <div className="sm:col-span-2 -mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Margin: <span className="font-medium text-foreground">
+                    ₵ {(parseFloat(form.price) - parseFloat(form.cost_price)).toFixed(2)}
+                  </span> per unit ({(((parseFloat(form.price) - parseFloat(form.cost_price)) / parseFloat(form.price)) * 100).toFixed(0)}%)
+                </p>
+              </div>
+            )}
 
             {/* ── Pricing tiers ── */}
             <div className="sm:col-span-2">

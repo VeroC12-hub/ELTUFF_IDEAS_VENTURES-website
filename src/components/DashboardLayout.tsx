@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LucideIcon, Menu, X, LogOut, ChevronDown } from "lucide-react";
+import { LucideIcon, Menu, X, LogOut, ChevronDown, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -34,6 +34,10 @@ const DashboardLayout = ({ children, navGroups, portalName }: DashboardLayoutPro
   const userRole = role === "admin" ? "Administrator" : role === "staff" ? "Staff" : "Client";
 
   const isActive = (url: string) => location.pathname === url;
+
+  const switchTo = portalName === "Retail Shop"
+    ? { label: "Production", url: "/staff/dashboard" }
+    : { label: "Retail Shop", url: "/retail/dashboard" };
 
   const handleLogout = async () => {
     await signOut();
@@ -139,8 +143,15 @@ const DashboardLayout = ({ children, navGroups, portalName }: DashboardLayoutPro
               <Menu className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{userName}</span>
+          <div className="flex items-center gap-3">
+            <Link
+              to={switchTo.url}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              {switchTo.label}
+            </Link>
+            <span className="text-sm text-muted-foreground hidden sm:inline">{userName}</span>
           </div>
         </header>
 

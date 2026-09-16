@@ -67,16 +67,22 @@ export const useCreateInvoice = () => {
       billingName,
       billingPhone,
       billingAddress,
+      channel,
+      paymentMethod,
+      status,
     }: {
       userId?: string;
       orderId?: string;
-      items: { description: string; quantity: number; unit_price: number }[];
+      items: { description: string; quantity: number; unit_price: number; product_id?: string }[];
       dueDate?: string;
       notes?: string;
       taxPercent?: number;
       billingName?: string;
       billingPhone?: string;
       billingAddress?: string;
+      channel?: "wholesale" | "retail";
+      paymentMethod?: string;
+      status?: string;
     }) => {
       const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
       const tax = subtotal * ((taxPercent ?? 0) / 100);
@@ -92,29 +98,34 @@ export const useCreateInvoice = () => {
           total_amount: total,
           due_date: dueDate ?? null,
           notes: notes ?? "",
-          status: "draft",
+          status: status ?? "draft",
+          paid_date: status === "paid" ? new Date().toISOString().split("T")[0] : null,
           billing_name: billingName ?? null,
           billing_phone: billingPhone ?? null,
           billing_address: billingAddress ?? null,
+          channel: channel ?? "wholesale",
+          payment_method: paymentMethod ?? null,
         } as any)
         .select()
         .single();
       if (invErr) throw invErr;
+      const createdInvoice = invoice as unknown as Invoice;
 
       const invItems = items.map((i) => ({
-        invoice_id: invoice.id,
+        invoice_id: createdInvoice.id,
         description: i.description,
         quantity: i.quantity,
         unit_price: i.unit_price,
         total_price: i.quantity * i.unit_price,
+        product_id: i.product_id ?? null,
       }));
 
       const { error: itemsErr } = await supabase
         .from("invoice_items")
-        .insert(invItems);
+        .insert(invItems as any);
       if (itemsErr) throw itemsErr;
 
-      return invoice;
+      return createdInvoice;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["invoices"] });
