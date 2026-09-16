@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  public: {
+  eltuff: {
     Tables: {
       categories: {
         Row: {
@@ -497,6 +497,7 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          client_tier: string | null
           company_name: string | null
           created_at: string
           email: string
@@ -509,6 +510,7 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          client_tier?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
@@ -521,6 +523,7 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          client_tier?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
@@ -707,17 +710,17 @@ export type Database = {
       user_roles: {
         Row: {
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["eltuff"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["eltuff"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["eltuff"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -1022,11 +1025,11 @@ export type Database = {
     Functions: {
       get_user_role: {
         Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"]
+        Returns: Database["eltuff"]["Enums"]["app_role"]
       }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database["eltuff"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
@@ -1045,7 +1048,7 @@ export type Database = {
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "eltuff">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -1161,7 +1164,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  eltuff: {
     Enums: {
       app_role: ["admin", "staff", "client"],
     },

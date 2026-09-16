@@ -1,46 +1,31 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Lock, User, Loader2 } from "lucide-react";
-import { useAuth, getDashboardPath } from "@/hooks/useAuth";
+import { ArrowLeft, User, Lock, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 const LoginPage = () => {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp, role } = useAuth();
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
-    if (mode === "signin") {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast({ title: "Sign in failed", description: error, variant: "destructive" });
-        setSubmitting(false);
-      } else {
-        // The LoginRedirect in App.tsx will handle navigation once role loads
-        // Just keep submitting state until redirect happens
-      }
-    } else {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        toast({ title: "Sign up failed", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Account created!", description: "Check your email to verify your account." });
-      }
+    const { error } = await signIn(identifier, password);
+    if (error) {
+      toast({ title: "Sign in failed", description: error, variant: "destructive" });
       setSubmitting(false);
     }
+    // On success, LoginRedirect in App.tsx navigates once the role loads —
+    // keep the submitting state until the redirect happens.
   };
 
   return (
@@ -66,45 +51,24 @@ const LoginPage = () => {
 
           <img src={logo} alt="Ani's Pride" className="h-12 mb-6 lg:hidden" />
 
-          <h2 className="text-2xl font-display font-bold mb-1">
-            {mode === "signin" ? "Sign In" : "Create Account"}
-          </h2>
+          <h2 className="text-2xl font-display font-bold mb-1">Sign In</h2>
           <p className="text-muted-foreground text-sm mb-6">
-            {mode === "signin"
-              ? "Enter your credentials to access your dashboard"
-              : "Sign up for a client account"}
+            Enter your email or phone number and password to access your dashboard
           </p>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    className="pl-10"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="identifier">Email or Phone</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
+                  id="identifier"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="you@company.com or 024 000 0000"
                   className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                 />
               </div>
@@ -117,12 +81,12 @@ const LoginPage = () => {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="pl-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
                 />
               </div>
             </div>
@@ -136,26 +100,12 @@ const LoginPage = () => {
             >
               {submitting ? (
                 <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Please wait...</>
-              ) : mode === "signin" ? "Sign In" : "Create Account"}
+              ) : "Sign In"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            {mode === "signin" ? (
-              <>
-                Don't have an account?{" "}
-                <button onClick={() => setMode("signup")} className="text-accent font-medium hover:underline">
-                  Sign Up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button onClick={() => setMode("signin")} className="text-accent font-medium hover:underline">
-                  Sign In
-                </button>
-              </>
-            )}
+            Need an account? Eltuff staff set up your login — please contact the office.
           </p>
         </div>
       </div>
