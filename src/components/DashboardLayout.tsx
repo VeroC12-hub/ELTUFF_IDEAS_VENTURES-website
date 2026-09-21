@@ -11,6 +11,7 @@ interface NavItem {
   title: string;
   url: string;
   icon: LucideIcon;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -67,7 +68,7 @@ const DashboardLayout = ({ children, navGroups, portalName }: DashboardLayoutPro
               </p>
             )}
             <div className="space-y-0.5">
-              {group.items.map((item) => (
+              {group.items.filter(item => !item.adminOnly || role === "admin").map((item) => (
                 <Link
                   key={item.url}
                   to={item.url}

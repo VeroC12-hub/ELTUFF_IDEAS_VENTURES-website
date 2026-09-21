@@ -11,6 +11,9 @@ export type Invoice = Tables<"invoices"> & {
   billing_name?: string | null;
   billing_phone?: string | null;
   billing_address?: string | null;
+  // Staff member who rang up the sale (retail channel)
+  sold_by?: string | null;
+  sold_by_name?: string | null;
 };
 
 // ─── Client: own invoices ──────────────────────────────────────────────────────
@@ -38,18 +41,26 @@ export const useAllInvoices = () =>
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      const withProfiles = await Promise.all(
-        (data ?? []).map(async (inv) => {
-          if (!inv.user_id) return { ...inv, profiles: null };
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, email, company_name, phone")
-            .eq("user_id", inv.user_id)
-            .single();
-          return { ...inv, profiles: profile };
-        })
-      );
-      return withProfiles as Invoice[];
+      const ids = new Set<string>();
+      (data ?? []).forEach((inv: any) => {
+        if (inv.user_id) ids.add(inv.user_id);
+        if (inv.sold_by) ids.add(inv.sold_by);
+      });
+
+      const profileMap = new Map<string, { full_name: string; email: string; company_name: string | null; phone: string | null }>();
+      if (ids.size > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email, company_name, phone")
+          .in("user_id", [...ids]);
+        (profiles ?? []).forEach((p: any) => profileMap.set(p.user_id, p));
+      }
+
+      return (data ?? []).map((inv: any) => ({
+        ...inv,
+        profiles: inv.user_id ? profileMap.get(inv.user_id) ?? null : null,
+        sold_by_name: inv.sold_by ? (profileMap.get(inv.sold_by)?.full_name || "Staff") : null,
+      })) as Invoice[];
     },
   });
 
@@ -70,6 +81,7 @@ export const useCreateInvoice = () => {
       channel,
       paymentMethod,
       status,
+      soldBy,
     }: {
       userId?: string;
       orderId?: string;
@@ -83,6 +95,7 @@ export const useCreateInvoice = () => {
       channel?: "wholesale" | "retail";
       paymentMethod?: string;
       status?: string;
+      soldBy?: string;
     }) => {
       const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
       const tax = subtotal * ((taxPercent ?? 0) / 100);
@@ -105,6 +118,7 @@ export const useCreateInvoice = () => {
           billing_address: billingAddress ?? null,
           channel: channel ?? "wholesale",
           payment_method: paymentMethod ?? null,
+          sold_by: soldBy ?? null,
         } as any)
         .select()
         .single();

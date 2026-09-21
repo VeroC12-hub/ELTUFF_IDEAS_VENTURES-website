@@ -19,6 +19,7 @@ import RetailReceiptsPage from "./pages/retail/RetailReceiptsPage";
 import RetailCustomersPage from "./pages/retail/RetailCustomersPage";
 import RetailReportsPage from "./pages/retail/RetailReportsPage";
 import RetailProductsPage from "./pages/retail/RetailProductsPage";
+import RetailExpensesPage from "./pages/retail/RetailExpensesPage";
 import BottlesLabelsPage from "./pages/staff/BottlesLabelsPage";
 import InventoryPage from "./pages/staff/InventoryPage";
 import ClientsPage from "./pages/staff/ClientsPage";
@@ -151,9 +152,17 @@ const App = () => (
               }
             />
             <Route
-              path="/retail/reports"
+              path="/retail/expenses"
               element={
                 <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                  <RetailExpensesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retail/reports"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
                   <RetailReportsPage />
                 </ProtectedRoute>
               }

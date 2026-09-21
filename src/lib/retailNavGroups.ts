@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Barcode, Receipt, Users, BarChart3, Tag,
+  LayoutDashboard, Barcode, Receipt, Users, BarChart3, Tag, Wallet,
 } from "lucide-react";
 
 const retailNavGroups = [
@@ -14,7 +14,8 @@ const retailNavGroups = [
       { title: "Receipts",   url: "/retail/receipts",  icon: Receipt },
       { title: "Price List", url: "/retail/products",  icon: Tag },
       { title: "Customers",  url: "/retail/customers", icon: Users },
-      { title: "Reports",    url: "/retail/reports",   icon: BarChart3 },
+      { title: "Expenses",   url: "/retail/expenses",  icon: Wallet },
+      { title: "Reports",    url: "/retail/reports",   icon: BarChart3, adminOnly: true },
     ],
   },
 ];

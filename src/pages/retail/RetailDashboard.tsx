@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAllInvoices } from "@/hooks/useInvoices";
 import { useAllProducts } from "@/hooks/useProducts";
+import { useAuth } from "@/hooks/useAuth";
 import retailNavGroups from "@/lib/retailNavGroups";
 import { Barcode, Receipt, Users, BarChart3, AlertTriangle } from "lucide-react";
 
@@ -13,12 +14,19 @@ const isToday = (iso: string) => {
 };
 
 export default function RetailDashboard() {
+  const { user, role, profile } = useAuth();
   const { data: invoices = [] } = useAllInvoices();
   const { data: products = [] } = useAllProducts();
+  const isAdmin = role === "admin";
 
   const todaysRetail = useMemo(
-    () => invoices.filter(i => (i as any).channel === "retail" && i.status === "paid" && isToday(i.created_at)),
-    [invoices]
+    () => invoices.filter(i =>
+      (i as any).channel === "retail" &&
+      i.status === "paid" &&
+      isToday(i.created_at) &&
+      (isAdmin || (i as any).sold_by === user?.id)
+    ),
+    [invoices, isAdmin, user?.id]
   );
 
   const todaysTotal = todaysRetail.reduce((s, i) => s + i.total_amount, 0);
@@ -42,15 +50,19 @@ export default function RetailDashboard() {
     { title: "New Sale", url: "/retail/sale", icon: Barcode },
     { title: "Receipts", url: "/retail/receipts", icon: Receipt },
     { title: "Customers", url: "/retail/customers", icon: Users },
-    { title: "Reports", url: "/retail/reports", icon: BarChart3 },
+    ...(isAdmin ? [{ title: "Reports", url: "/retail/reports", icon: BarChart3 }] : []),
   ];
 
   return (
     <DashboardLayout navGroups={retailNavGroups} portalName="Retail Shop">
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-display font-bold">Retail Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Today's shop activity</p>
+          <h1 className="text-2xl font-display font-bold">
+            {isAdmin ? "Retail Dashboard (All Staff)" : `${profile?.full_name || "My"} Dashboard`}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {isAdmin ? "Today's shop activity across everyone" : "Your sales today"}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -70,7 +82,7 @@ export default function RetailDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-sm text-muted-foreground mb-1">Today's Sales</p>
+            <p className="text-sm text-muted-foreground mb-1">{isAdmin ? "Today's Sales (Total)" : "Your Sales Today"}</p>
             <p className="text-2xl font-bold">₵ {todaysTotal.toFixed(2)}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
@@ -85,7 +97,7 @@ export default function RetailDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-card border border-border rounded-xl p-4">
-            <h2 className="font-semibold mb-3">Top Sellers Today</h2>
+            <h2 className="font-semibold mb-3">{isAdmin ? "Top Sellers Today" : "Your Top Sellers Today"}</h2>
             {topItems.length === 0 ? (
               <p className="text-sm text-muted-foreground">No sales yet today</p>
             ) : (

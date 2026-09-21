@@ -1,0 +1,1 @@
+-- Already applied to the live database outside the CLI (see repair history). Placeholder only, do not re-run.

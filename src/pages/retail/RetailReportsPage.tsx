@@ -1,130 +1,116 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useAllInvoices } from "@/hooks/useInvoices";
+import { useAllInvoices, Invoice } from "@/hooks/useInvoices";
 import retailNavGroups from "@/lib/retailNavGroups";
 
-type Range = "today" | "week" | "month";
+type Range = "day" | "month" | "year";
 
 const inRange = (iso: string, range: Range) => {
   const d = new Date(iso);
   const now = new Date();
-  if (range === "today") {
+  if (range === "day") {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
   }
-  const days = range === "week" ? 7 : 30;
-  const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  return d >= cutoff;
+  if (range === "month") {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+  return d.getFullYear() === now.getFullYear();
 };
+
+interface StaffTotals {
+  name: string;
+  total: number;
+  count: number;
+}
+
+function summarize(invoices: Invoice[], range: Range) {
+  const receipts = invoices.filter(
+    i => (i as any).channel === "retail" && i.status === "paid" && inRange(i.created_at, range)
+  );
+  const byStaff = new Map<string, StaffTotals>();
+  for (const inv of receipts) {
+    const key = (inv as any).sold_by ?? "unknown";
+    const name = (inv as any).sold_by_name ?? "Unassigned";
+    const cur = byStaff.get(key) ?? { name, total: 0, count: 0 };
+    cur.total += inv.total_amount;
+    cur.count += 1;
+    byStaff.set(key, cur);
+  }
+  const grandTotal = receipts.reduce((s, i) => s + i.total_amount, 0);
+  return {
+    grandTotal,
+    count: receipts.length,
+    byStaff: [...byStaff.values()].sort((a, b) => b.total - a.total),
+  };
+}
+
+function RangeSection({ title, data }: { title: string; data: ReturnType<typeof summarize> }) {
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <p className="font-semibold">{title}</p>
+        <div className="text-right">
+          <p className="text-lg font-bold">₵ {data.grandTotal.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">{data.count} transactions</p>
+        </div>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-muted/50">
+            <th className="text-left p-3 font-medium text-muted-foreground">Staff</th>
+            <th className="text-left p-3 font-medium text-muted-foreground">Transactions</th>
+            <th className="text-right p-3 font-medium text-muted-foreground">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.byStaff.length === 0 ? (
+            <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">No sales in this period</td></tr>
+          ) : data.byStaff.map(s => (
+            <tr key={s.name} className="border-b border-border/50">
+              <td className="p-3">{s.name}</td>
+              <td className="p-3 text-muted-foreground">{s.count}</td>
+              <td className="p-3 text-right font-medium">₵ {s.total.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function RetailReportsPage() {
   const { data: invoices = [] } = useAllInvoices();
-  const [range, setRange] = useState<Range>("today");
 
-  const receipts = useMemo(
-    () => invoices.filter(i => (i as any).channel === "retail" && i.status === "paid" && inRange(i.created_at, range)),
-    [invoices, range]
-  );
-
-  const total = receipts.reduce((s, i) => s + i.total_amount, 0);
-
-  const byPayment = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of receipts) {
-      const method = (r as any).payment_method ?? "unknown";
-      map.set(method, (map.get(method) ?? 0) + r.total_amount);
-    }
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
-  }, [receipts]);
-
-  const topProducts = useMemo(() => {
-    const map = new Map<string, { qty: number; revenue: number }>();
-    for (const r of receipts) {
-      for (const item of r.invoice_items ?? []) {
-        const cur = map.get(item.description) ?? { qty: 0, revenue: 0 };
-        cur.qty += item.quantity;
-        cur.revenue += item.total_price;
-        map.set(item.description, cur);
-      }
-    }
-    return [...map.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10);
-  }, [receipts]);
-
-  const ranges: { value: Range; label: string }[] = [
-    { value: "today", label: "Today" },
-    { value: "week", label: "Last 7 Days" },
-    { value: "month", label: "Last 30 Days" },
-  ];
+  const day = useMemo(() => summarize(invoices, "day"), [invoices]);
+  const month = useMemo(() => summarize(invoices, "month"), [invoices]);
+  const year = useMemo(() => summarize(invoices, "year"), [invoices]);
 
   return (
     <DashboardLayout navGroups={retailNavGroups} portalName="Retail Shop">
       <div className="space-y-5">
         <div>
           <h1 className="text-2xl font-display font-bold">Reports</h1>
-          <p className="text-muted-foreground text-sm">Retail sales summary</p>
+          <p className="text-muted-foreground text-sm">Sales by staff, plus totals for day, month and year</p>
         </div>
 
-        <div className="flex gap-2">
-          {ranges.map(r => (
-            <button
-              key={r.value}
-              onClick={() => setRange(r.value)}
-              className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
-                range === r.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-sm text-muted-foreground mb-1">Total Sales</p>
-            <p className="text-2xl font-bold">₵ {total.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{receipts.length} transactions</p>
+            <p className="text-sm text-muted-foreground mb-1">Total Today</p>
+            <p className="text-2xl font-bold">₵ {day.grandTotal.toFixed(2)}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <p className="text-sm font-semibold mb-2">By Payment Method</p>
-            {byPayment.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No sales in this period</p>
-            ) : (
-              <div className="space-y-1">
-                {byPayment.map(([method, amount]) => (
-                  <div key={method} className="flex justify-between text-sm">
-                    <span className="capitalize text-muted-foreground">{method}</span>
-                    <span className="font-medium">₵ {amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="text-sm text-muted-foreground mb-1">Total This Month</p>
+            <p className="text-2xl font-bold">₵ {month.grandTotal.toFixed(2)}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4">
+            <p className="text-sm text-muted-foreground mb-1">Total This Year</p>
+            <p className="text-2xl font-bold">₵ {year.grandTotal.toFixed(2)}</p>
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <p className="font-semibold">Top Products</p>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="text-left p-3 font-medium text-muted-foreground">Product</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Qty Sold</th>
-                <th className="text-right p-3 font-medium text-muted-foreground">Revenue</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topProducts.length === 0 ? (
-                <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">No sales in this period</td></tr>
-              ) : topProducts.map(([name, stats]) => (
-                <tr key={name} className="border-b border-border/50">
-                  <td className="p-3">{name}</td>
-                  <td className="p-3 text-muted-foreground">{stats.qty}</td>
-                  <td className="p-3 text-right font-medium">₵ {stats.revenue.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <RangeSection title="Today by Staff" data={day} />
+        <RangeSection title="This Month by Staff" data={month} />
+        <RangeSection title="This Year by Staff" data={year} />
       </div>
     </DashboardLayout>
   );

@@ -214,6 +214,7 @@ export default function RetailSalePage() {
         channel: "retail",
         paymentMethod,
         status: "paid",
+        soldBy: user?.id,
       });
 
       for (const i of items) {

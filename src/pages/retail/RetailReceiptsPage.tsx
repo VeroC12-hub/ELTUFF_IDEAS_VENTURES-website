@@ -12,9 +12,16 @@ import retailNavGroups from "@/lib/retailNavGroups";
 import { printReceipt } from "@/lib/printReceipt";
 import { Receipt, RotateCcw, Printer } from "lucide-react";
 
+const isToday = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+};
+
 export default function RetailReceiptsPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin";
   const { data: invoices = [], isLoading } = useAllInvoices();
   const { data: products = [] } = useAllProducts();
   const updateStatus = useUpdateInvoiceStatus();
@@ -28,11 +35,12 @@ export default function RetailReceiptsPage() {
   const retailReceipts = useMemo(
     () => invoices
       .filter(i => (i as any).channel === "retail")
+      .filter(i => isAdmin || ((i as any).sold_by === user?.id && isToday(i.created_at)))
       .filter(i =>
         (i.invoice_number ?? "").toLowerCase().includes(search.toLowerCase()) ||
         ((i as any).billing_name ?? "").toLowerCase().includes(search.toLowerCase())
       ),
-    [invoices, search]
+    [invoices, search, isAdmin, user?.id]
   );
 
   const handleRefund = async () => {
@@ -69,7 +77,9 @@ export default function RetailReceiptsPage() {
       <div className="space-y-5">
         <div>
           <h1 className="text-2xl font-display font-bold">Receipts</h1>
-          <p className="text-muted-foreground text-sm">{retailReceipts.length} retail sales</p>
+          <p className="text-muted-foreground text-sm">
+            {isAdmin ? `${retailReceipts.length} retail sales` : `${retailReceipts.length} of your sales today`}
+          </p>
         </div>
 
         <Input placeholder="Search by receipt # or customer…" value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" />
@@ -82,6 +92,7 @@ export default function RetailReceiptsPage() {
                   <th className="text-left p-3 font-medium text-muted-foreground">Receipt #</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Customer</th>
+                  {isAdmin && <th className="text-left p-3 font-medium text-muted-foreground">Sold By</th>}
                   <th className="text-left p-3 font-medium text-muted-foreground">Payment</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Total</th>
                   <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -90,14 +101,15 @@ export default function RetailReceiptsPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Loading…</td></tr>
+                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-8 text-center text-muted-foreground">Loading…</td></tr>
                 ) : retailReceipts.length === 0 ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No retail sales yet</td></tr>
+                  <tr><td colSpan={isAdmin ? 8 : 7} className="p-8 text-center text-muted-foreground">No retail sales yet</td></tr>
                 ) : retailReceipts.map(inv => (
                   <tr key={inv.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-medium">{inv.invoice_number}</td>
                     <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleString()}</td>
                     <td className="p-3">{(inv as any).billing_name ?? "Walk-in Customer"}</td>
+                    {isAdmin && <td className="p-3 text-muted-foreground">{(inv as any).sold_by_name ?? "—"}</td>}
                     <td className="p-3 capitalize text-muted-foreground">{(inv as any).payment_method ?? "—"}</td>
                     <td className="p-3 font-semibold">₵ {inv.total_amount.toFixed(2)}</td>
                     <td className="p-3">
