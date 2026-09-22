@@ -5,6 +5,7 @@ import { LucideIcon, Menu, X, LogOut, ChevronDown, ArrowLeftRight } from "lucide
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import InstallAppBanner from "@/components/InstallAppBanner";
+import OfflineBanner from "@/components/OfflineBanner";
 import logo from "@/assets/logo.png";
 
 interface NavItem {
@@ -136,6 +137,7 @@ const DashboardLayout = ({ children, navGroups, portalName }: DashboardLayoutPro
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
+        <OfflineBanner />
         <InstallAppBanner />
         <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-3">

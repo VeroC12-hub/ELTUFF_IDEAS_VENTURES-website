@@ -7,6 +7,7 @@ import { ArrowLeft, User, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import InstallAppBanner from "@/components/InstallAppBanner";
+import OfflineBanner from "@/components/OfflineBanner";
 import logo from "@/assets/logo.png";
 
 const LoginPage = () => {
@@ -31,6 +32,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <OfflineBanner />
       <InstallAppBanner />
       <div className="flex flex-1">
       {/* Left Panel */}
