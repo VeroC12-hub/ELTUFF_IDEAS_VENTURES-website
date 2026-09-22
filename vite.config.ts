@@ -38,6 +38,17 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/rest\//, /^\/auth\//],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.hostname.endsWith(".supabase.co"),
+            handler: "NetworkOnly",
+          },
+        ],
       },
     }),
   ].filter(Boolean),
