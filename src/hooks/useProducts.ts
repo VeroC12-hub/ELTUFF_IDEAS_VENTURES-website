@@ -67,6 +67,63 @@ export const useProduct = (id: string | undefined) =>
     },
   });
 
+// ─── Server-side product search (by name or SKU) ───────────────────────────────
+// Used for scan/search boxes so we never load the entire catalog client-side —
+// safe at any catalog size (10, 10,000, or more).
+export const useProductSearch = (query: string) =>
+  useQuery({
+    queryKey: ["products", "search", query],
+    enabled: query.trim().length > 0,
+    queryFn: async () => {
+      const q = query.trim();
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, categories(name)")
+        .eq("is_active", true)
+        .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
+        .order("name")
+        .limit(20);
+      if (error) throw error;
+      return (data ?? []) as Product[];
+    },
+  });
+
+// ─── Server-side exact SKU lookup (barcode scans) ──────────────────────────────
+export const useProductBySku = () => {
+  return async (sku: string): Promise<Product | null> => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, categories(name)")
+      .eq("is_active", true)
+      .ilike("sku", sku.trim())
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as Product) ?? null;
+  };
+};
+
+// ─── Paginated product listing (for large catalogs) ────────────────────────────
+export const useProductsPaginated = (page: number, pageSize: number, search: string) =>
+  useQuery({
+    queryKey: ["products", "paginated", page, pageSize, search],
+    queryFn: async () => {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      let query = supabase
+        .from("products")
+        .select("*, categories(name)", { count: "exact" })
+        .order("name");
+      if (search.trim()) {
+        const q = search.trim();
+        query = query.or(`name.ilike.%${q}%,sku.ilike.%${q}%`);
+      }
+      const { data, error, count } = await query.range(from, to);
+      if (error) throw error;
+      return { rows: (data ?? []) as Product[], total: count ?? 0 };
+    },
+  });
+
 // ─── Staff: all products ───────────────────────────────────────────────────────
 export const useAllProducts = () =>
   useQuery({

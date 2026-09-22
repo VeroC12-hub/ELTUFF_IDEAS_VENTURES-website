@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useAllProducts, useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts";
+import { useProductsPaginated, useProductBySku, useCreateProduct, useUpdateProduct, Product } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
 import retailNavGroups from "@/lib/retailNavGroups";
-import { ExternalLink, Barcode, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Barcode, Pencil, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 type FormData = {
   name: string; sku: string; size: string; cost_price: string;
@@ -26,23 +28,33 @@ const emptyForm: FormData = {
 export default function RetailProductsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data: products = [], isLoading } = useAllProducts();
+  const lookupBySku = useProductBySku();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [scan, setScan] = useState("");
   const [dialog, setDialog] = useState<"create" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const scanRef = useRef<HTMLInputElement>(null);
 
-  const filtered = products.filter(p =>
-    p.is_active && (
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.sku ?? "").toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  // Debounce search so we don't fire a query on every keystroke, and reset to
+  // page 0 whenever the search term changes.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data, isLoading } = useProductsPaginated(page, PAGE_SIZE, debouncedSearch);
+  const filtered = data?.rows ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Catches a barcode scan no matter where focus is on the page (a scanner just
   // types fast + Enter), and redirects it into the scan field automatically.
@@ -83,15 +95,19 @@ export default function RetailProductsPage() {
     setDialog("create");
   };
 
-  const handleScanKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleScanKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
     const code = scan.trim();
     if (!code) return;
-    const match = products.find(p => (p.sku ?? "").toLowerCase() === code.toLowerCase());
-    if (match) {
-      openEdit(match);
-    } else {
-      openCreate(code);
+    try {
+      const match = await lookupBySku(code);
+      if (match) {
+        openEdit(match);
+      } else {
+        openCreate(code);
+      }
+    } catch {
+      toast({ title: "Lookup failed", description: "Check your connection and try again.", variant: "destructive" });
     }
     setScan("");
   };
@@ -214,6 +230,21 @@ export default function RetailProductsPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border p-3 text-sm text-muted-foreground">
+              <span>
+                Page {page + 1} of {totalPages} · {total} products
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                </Button>
+                <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

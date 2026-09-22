@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useAllProducts, Product } from "@/hooks/useProducts";
+import { useProductSearch, useProductBySku, Product } from "@/hooks/useProducts";
 import { useAdjustStock } from "@/hooks/useInventory";
 import { useCreateInvoice } from "@/hooks/useInvoices";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,11 +42,12 @@ const unitPrice = (product: Product, tier: Tier) => {
 export default function RetailSalePage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data: products = [] } = useAllProducts();
   const createInvoice = useCreateInvoice();
   const adjustStock = useAdjustStock();
+  const lookupBySku = useProductBySku();
 
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [items, setItems] = useState<SaleItem[]>([]);
   const [tier, setTier] = useState<Tier>("retail");
   const [customerName, setCustomerName] = useState("");
@@ -65,7 +66,15 @@ export default function RetailSalePage() {
     localStorage.setItem(HELD_SALES_KEY, JSON.stringify(heldSales));
   }, [heldSales]);
 
-  const active = useMemo(() => products.filter(p => p.is_active), [products]);
+  // Debounce so manual typing doesn't fire a search request per keystroke —
+  // a barcode scan's rapid input + Enter isn't affected since the exact-match
+  // lookup on Enter queries fresh, independent of this.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const { data: matches = [] } = useProductSearch(debouncedQuery);
 
   // Catches a barcode scan no matter where focus is on the page (a scanner just
   // types fast + Enter), and redirects it into the scan field automatically.
@@ -82,14 +91,6 @@ export default function RetailSalePage() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return active.filter(p =>
-      p.name.toLowerCase().includes(q) || (p.sku ?? "").toLowerCase().includes(q)
-    ).slice(0, 8);
-  }, [query, active]);
-
   const addProduct = (product: Product) => {
     setItems(prev => {
       const existing = prev.find(i => i.product.id === product.id);
@@ -102,15 +103,19 @@ export default function RetailSalePage() {
     inputRef.current?.focus();
   };
 
-  const handleQueryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleQueryKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return;
-    const exact = active.find(p => (p.sku ?? "").toLowerCase() === q);
-    if (exact) {
-      addProduct(exact);
-    } else if (matches.length === 0) {
-      toast({ title: "Product not found", description: "Add it from Products on the Production side first.", variant: "destructive" });
+    try {
+      const exact = await lookupBySku(q);
+      if (exact) {
+        addProduct(exact);
+      } else {
+        toast({ title: "Product not found", description: "Add it from Products on the Production side first.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Lookup failed", description: "Check your connection and try again.", variant: "destructive" });
     }
   };
 
